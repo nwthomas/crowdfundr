@@ -6,13 +6,13 @@ import "./Project.sol";
 
 contract ProjectFactory is Ownable(msg.sender) {
   Project[] public projects;
-  mapping(address => uint256[]) public ownersToProjects;
+  mapping(address => uint256[]) public ownerToProjects;
 
   function createNewProject(
-    string memory _name,
-    string memory _description,
+    string calldata _name,
+    string calldata _description,
     uint256 _fundraisingGoal
-  ) external payable {
+  ) external {
     Project newProject = new Project(
       _name,
       _description,
@@ -20,7 +20,7 @@ contract ProjectFactory is Ownable(msg.sender) {
       msg.sender
     );
 
-    ownersToProjects[msg.sender].push(projects.length);
+    ownerToProjects[msg.sender].push(projects.length);
     projects.push(newProject);
   }
 }

@@ -6,7 +6,7 @@ pragma solidity ^0.8.4;
  * contract in order to take in the owner address explicitily through the constructor
  * rather than relying on the msg.sender value which was previously used.
  *
- * This is aontract module which provides a basic access control mechanism, where
+ * This is a contract module which provides a basic access control mechanism, where
  * there is an account (an owner) that can be granted exclusive access to
  * specific functions.
  *

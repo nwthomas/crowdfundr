@@ -12,18 +12,43 @@ contract Project is Ownable {
 
   mapping(address => uint256) public addressToContributions;
 
-  // The minimum contribution limit for contributors to a project
-  uint256 private constant MINIMUM_CONTRIBUTION = 0.1 ether;
+  uint256 private constant MINIMUM_CONTRIBUTION = 0.01 ether;
+  uint256 private constant PROJECT_TIME_LENGTH_SECONDS = 30 days;
 
-  // TODO: Write events
   event Contribution(address from, address project, uint256 amount);
-  event Refund(address to, address project, uint256 amount);
-  event Withdraw(address to, address project, uint256 amount);
+  event Refunded(address to, address project, uint256 amount);
+  event Withdrawn(address to, address project, uint256 amount);
 
-  modifier isCurrentlyRunningProject() {
+  modifier isNotExpiredProject() {
     require(
       projectEndTimeSeconds <= block.timestamp,
-      "Error: Time limit ended"
+      "Project: time limit for project expired"
+    );
+    _;
+  }
+
+  modifier isExpiredProject() {
+    require(
+      projectEndTimeSeconds > block.timestamp,
+      "Project: time limit has not expired"
+    );
+    _;
+  }
+
+  modifier isNotCancelledProject() {
+    require(!isCancelled, "Project: project has been cancelled");
+    _;
+  }
+
+  modifier isCancelledProject() {
+    require(isCancelled, "Project: project has not been cancelled");
+    _;
+  }
+
+  modifier isValidContribution() {
+    require(
+      msg.value >= MINIMUM_CONTRIBUTION,
+      "Project: contribution must be >= 0.01 ether"
     );
     _;
   }
@@ -38,35 +63,48 @@ contract Project is Ownable {
     description = _description;
     fundraisingGoal = _fundraisingGoal;
 
-    // The maximum length of time a project can run is 30 days
-    projectEndTimeSeconds = block.timestamp + (60 * 60 * 24 * 30);
-
-    // Allow owners of project to contribute while instantiating
-    if (msg.value > 0) {
-      addressToContributions[msg.sender] += msg.value;
-      emit Contribution(msg.sender, address(this), msg.value);
-    }
+    projectEndTimeSeconds = block.timestamp + PROJECT_TIME_LENGTH_SECONDS;
   }
 
-  receive() external payable {
-    // TODO: Finish contribution
+  receive()
+    external
+    payable
+    isValidContribution
+    isNotExpiredProject
+    isNotCancelledProject
+  {
+    addressToContributions[msg.sender] += msg.value;
+    emit Contribution(msg.sender, address(this), msg.value);
   }
 
-  function cancelProject() external onlyOwner isCurrentlyRunningProject {
+  function cancelProject() external onlyOwner isNotCancelledProject {
     isCancelled = true;
   }
 
-  function withdrawCancelledProjectFunds() external payable {
-    require(!isCancelled, "Error: Project is not cancelled");
-
+  function withdrawCancelledProjectFunds() external payable isCancelledProject {
     uint256 addressContributions = addressToContributions[msg.sender];
     addressToContributions[msg.sender] = 0;
     (bool success, ) = msg.sender.call{ value: addressContributions }("");
     require(success, "Error: Transfer failed");
-    emit Refund(msg.sender, address(this), addressContributions);
+    emit Refunded(msg.sender, address(this), addressContributions);
   }
 
-  function withdrawCompletedProjectFunds() external payable onlyOwner {
+  function withdrawCompletedProjectFunds()
+    external
+    payable
+    onlyOwner
+    isNotCancelledProject
+    isExpiredProject
+  {
+    require(address(this).balance > 0, "Project: contains no ether");
+
+    uint256 contractBalance = address(this).balance;
+    (bool success, ) = msg.sender.call{ value: contractBalance }("");
+    require(success, "Project: transfer failed");
+    emit Withdrawn(msg.sender, address(this), contractBalance);
+  }
+
+  function mintNFTs() external isNotCancelledProject isExpiredProject {
     // finish
   }
 }
