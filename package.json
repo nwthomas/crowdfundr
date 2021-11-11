@@ -1,8 +1,11 @@
 {
   "name": "crowdfundr",
   "version": "0.0.0-alpha",
-  "description": "A smart contract fpr funding projects",
-  "author": "Nathan Thomas",
+  "description": "A smart contract foor funding projects",
+  "author": {
+    "name": "Nathan Thomas",
+    "url": "https://nathanthomas.dev"
+  },
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -19,21 +22,6 @@
     "url": "https://github.com/nwthomas/crowdfundr/issues"
   },
   "main": "contracts/",
-  "scripts": {
-    "compile": "cross-env TS_NODE_TRANSPILE_ONLY=true hardhat compile",
-    "coverage": "yarn typechain && hardhat coverage --solcoverjs ./.solcover.ts --temp artifacts --testfiles \"./test/**/*.ts\"",
-    "deploy-local": "npx hardhat run scripts/deploy.ts --network localhost",
-    "deploy-rinkeby": "npx hardhat run scripts/deploy.ts --network rinkeby",
-    "lint": "yarn lint:sol && yarn lint:ts && yarn prettier:check",
-    "lint:sol": "./node_modules/.bin/solhint -f table contracts/**/*.sol",
-    "lint:ts": "eslint --config ./.eslintrc.json --ignore-path ./.eslintignore --ext .js,.ts .",
-    "prettier": "prettier --config ./.prettierrc.yaml --write \"**/*.{js,json,md,sol,ts}\"",
-    "prettier:check": "prettier --check --config ./.prettierrc.yaml \"**/*.{js,json,md,sol,ts}\"",
-    "start": "npx hardhat run scripts/run.ts",
-    "server": "npx hardhat node",
-    "test": "npx hardhat test",
-    "typechain": "cross-env TS_NODE_TRANSPILE_ONLY=true hardhat typechain"
-  },
   "homepage": "https://github.com/nwthomas/crowdfundr#readme",
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.0",
@@ -61,6 +49,7 @@
     "ethers": "^5.0.0",
     "hardhat": "^2.6.8",
     "hardhat-gas-reporter": "^1.0.4",
+    "nodemon": "^2.0.15",
     "prettier": "^2.3.2",
     "prettier-plugin-solidity": "^1.0.0-beta.13",
     "shelljs": "^0.8.4",
@@ -69,5 +58,20 @@
     "ts-node": "^10.1.0",
     "typechain": "^5.1.2",
     "typescript": "^4.3.5"
+  },
+  "scripts": {
+    "compile": "cross-env TS_NODE_TRANSPILE_ONLY=true hardhat compile",
+    "coverage": "yarn typechain && hardhat coverage --solcoverjs ./.solcover.ts --temp artifacts --testfiles \"./test/**/*.ts\"",
+    "deploy-local": "npx hardhat run scripts/deploy.ts --network localhost",
+    "deploy-rinkeby": "npx hardhat run scripts/deploy.ts --network rinkeby",
+    "lint": "yarn lint:sol && yarn lint:ts && yarn prettier:check",
+    "lint:sol": "./node_modules/.bin/solhint -f table contracts/**/*.sol",
+    "lint:ts": "eslint --config ./.eslintrc.json --ignore-path ./.eslintignore --ext .js,.ts .",
+    "prettier": "prettier --config ./.prettierrc.yaml --write \"**/*.{js,json,md,sol,ts}\"",
+    "prettier:check": "prettier --check --config ./.prettierrc.yaml \"**/*.{js,json,md,sol,ts}\"",
+    "start": "npx hardhat run scripts/run.ts",
+    "server": "npx hardhat node",
+    "test": "nodemon -x 'npx hardhat test' -w contracts -w test -e js,ts,sol",
+    "typechain": "cross-env TS_NODE_TRANSPILE_ONLY=true hardhat typechain"
   }
 }

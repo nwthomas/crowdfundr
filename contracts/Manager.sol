@@ -8,6 +8,8 @@ contract Manager is Ownable {
   Project[] public projects;
   mapping(address => uint256[]) public ownerToProjects;
 
+  event ProjectCreated(address indexed creator, address indexed projectAddress, uint256 indexed projectIndex);
+
   function createNewProject(
     string calldata _name,
     string calldata _description,
@@ -22,7 +24,9 @@ contract Manager is Ownable {
       msg.sender
     );
 
-    ownerToProjects[msg.sender].push(projects.length);
+    uint256 newProjectIndex = projects.length;
+    ownerToProjects[msg.sender].push(newProjectIndex);
     projects.push(newProject);
+    emit ProjectCreated(msg.sender, address(newProject), newProjectIndex);
   }
 }

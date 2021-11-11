@@ -19,9 +19,9 @@ contract Project is Ownable, ERC721 {
   uint256 public constant MINIMUM_CONTRIBUTION = 0.01 ether;
   uint256 public constant PROJECT_TIME_LENGTH_SECONDS = 30 days;
 
-  event Contribution(address from, address project, uint256 amount);
-  event Refunded(address to, address project, uint256 amount);
-  event Withdrawn(address to, address project, uint256 amount);
+  event Contribution(address indexed from, address indexed project, uint256 indexed amount);
+  event Refunded(address indexed to, address indexed project, uint256 indexed amount);
+  event Withdrawn(address indexed to, address indexed project, uint256 indexed amount);
 
   modifier hasMintableNFTs() {
     uint256 addressNFTs = balanceOf(msg.sender);

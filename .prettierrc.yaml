@@ -1,10 +1,8 @@
 bracketSpacing: true
-endOfLine: auto
 singleQuote: false
 tabWidth: 2
-trailingComma: all
-
 overrides:
   - files: "*.sol"
     options:
       tabWidth: 2
+      trailingComma: all,
