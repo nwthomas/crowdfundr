@@ -45,38 +45,21 @@ contract Project is Ownable, ERC721 {
     );
     _;
   }
-
-  modifier isCancelledProject() {
-    require(isCancelled, "Project: project has not been cancelled");
-    _;
-  }
-
-  modifier isExpiredProject() {
-    require(
-      projectEndTimeSeconds > block.timestamp,
-      "Project: time limit has not expired"
-    );
+  modifier isNotCancelledProject() {
+    require(!isCancelled, "Project: project is cancelled");
     _;
   }
 
   modifier isNotExpiredProject() {
     require(
-      projectEndTimeSeconds <= block.timestamp,
+      block.timestamp < projectEndTimeSeconds,
       "Project: time limit for project expired"
     );
     _;
   }
 
-  modifier isNotCancelledProject() {
-    require(!isCancelled, "Project: project has been cancelled");
-    _;
-  }
-
-  modifier isValidContribution() {
-    require(
-      msg.value >= MINIMUM_CONTRIBUTION,
-      "Project: contribution must be >= 0.01 ether"
-    );
+  modifier isNotFinishedProject() {
+    require(!isFinished, "Project: project has finished");
     _;
   }
 
@@ -97,22 +80,42 @@ contract Project is Ownable, ERC721 {
   receive()
     external
     payable
-    isValidContribution
-    isNotExpiredProject
     isNotCancelledProject
+    isNotExpiredProject
+    isNotFinishedProject
   {
+    require(
+      msg.value >= MINIMUM_CONTRIBUTION,
+      "Project: contribution must be >= 0.01 ether"
+    );
+
+    if (msg.value + address(this).balance >= fundraisingGoal) {
+      isFinished = true;
+    }
+
     addressToContributions[msg.sender] += msg.value;
     emit Contribution(msg.sender, address(this), msg.value);
   }
 
-  function cancelProject() external onlyOwner isNotCancelledProject {
+  function cancelProject()
+    external
+    onlyOwner
+    isNotCancelledProject
+    isNotExpiredProject
+    isNotFinishedProject
+  {
     isCancelled = true;
   }
 
-  function withdrawCancelledProjectFunds() external isCancelledProject {
+  function withdrawUnsuccessfulProjectFunds() external {
+    require(
+      isCancelled || (block.timestamp >= projectEndTimeSeconds && !isFinished),
+      "Project: cannot withdraw successful project funds"
+    );
+
     require(
       addressToContributions[msg.sender] > 0,
-      "Project: address has not contributions"
+      "Project: address has no contributions"
     );
 
     uint256 addressContributions = addressToContributions[msg.sender];
@@ -122,12 +125,8 @@ contract Project is Ownable, ERC721 {
     emit Refunded(msg.sender, address(this), addressContributions);
   }
 
-  function withdrawCompletedProjectFunds()
-    external
-    onlyOwner
-    isNotCancelledProject
-    isExpiredProject
-  {
+  function withdrawCompletedProjectFunds() external onlyOwner {
+    require(isFinished, "Project: project not finished successfully");
     require(address(this).balance > 0, "Project: contains no ether");
 
     uint256 contractBalance = address(this).balance;
@@ -136,13 +135,7 @@ contract Project is Ownable, ERC721 {
     emit Withdrawn(msg.sender, address(this), contractBalance);
   }
 
-  function mintNFT()
-    external
-    isNotCancelledProject
-    isExpiredProject
-    hasMintableNFTs
-    returns (uint256)
-  {
+  function mintNFT() external hasMintableNFTs returns (uint256) {
     uint256 newTokenId = tokenIds.current();
     _safeMint(msg.sender, newTokenId);
 
