@@ -6,7 +6,7 @@ const { expect } = chai;
 
 chai.use(solidity);
 
-describe("Manager", () => {
+describe("Project", () => {
   let ownerAddress: SignerWithAddress,
     secondAddress: SignerWithAddress,
     thirdAddress: SignerWithAddress;

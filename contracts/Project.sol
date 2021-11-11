@@ -13,15 +13,28 @@ contract Project is Ownable, ERC721 {
   uint256 public projectEndTimeSeconds;
   uint256 public fundraisingGoal;
   bool public isCancelled = false;
+  bool public isFinished = false;
 
   mapping(address => uint256) public addressToContributions;
 
   uint256 public constant MINIMUM_CONTRIBUTION = 0.01 ether;
-  uint256 public constant PROJECT_TIME_LENGTH_SECONDS = 60 * 60 * 24 * 30;
+  uint256 public constant PROJECT_TIME_LENGTH_SECONDS = 30 days;
 
-  event Contribution(address indexed from, address indexed project, uint256 indexed amount);
-  event Refunded(address indexed to, address indexed project, uint256 indexed amount);
-  event Withdrawn(address indexed to, address indexed project, uint256 indexed amount);
+  event Contribution(
+    address indexed from,
+    address indexed project,
+    uint256 indexed amount
+  );
+  event Refunded(
+    address indexed to,
+    address indexed project,
+    uint256 indexed amount
+  );
+  event Withdrawn(
+    address indexed to,
+    address indexed project,
+    uint256 indexed amount
+  );
 
   modifier hasMintableNFTs() {
     uint256 addressNFTs = balanceOf(msg.sender);
@@ -29,6 +42,19 @@ contract Project is Ownable, ERC721 {
     require(
       addressNFTs < wholeEthContributed,
       "Project: no available NFTs to mint"
+    );
+    _;
+  }
+
+  modifier isCancelledProject() {
+    require(isCancelled, "Project: project has not been cancelled");
+    _;
+  }
+
+  modifier isExpiredProject() {
+    require(
+      projectEndTimeSeconds > block.timestamp,
+      "Project: time limit has not expired"
     );
     _;
   }
@@ -41,21 +67,8 @@ contract Project is Ownable, ERC721 {
     _;
   }
 
-  modifier isExpiredProject() {
-    require(
-      projectEndTimeSeconds > block.timestamp,
-      "Project: time limit has not expired"
-    );
-    _;
-  }
-
   modifier isNotCancelledProject() {
     require(!isCancelled, "Project: project has been cancelled");
-    _;
-  }
-
-  modifier isCancelledProject() {
-    require(isCancelled, "Project: project has not been cancelled");
     _;
   }
 
