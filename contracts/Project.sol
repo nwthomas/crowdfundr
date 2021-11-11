@@ -1,10 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
-import "./Ownable.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
-contract Project is Ownable {
-  string public name;
+contract Project is Ownable, ERC721 {
+  using Counters for Counters.Counter;
+  Counters.Counter private tokenIds;
+
   string public description;
   uint256 public projectEndTimeSeconds;
   uint256 public fundraisingGoal;
@@ -12,12 +16,22 @@ contract Project is Ownable {
 
   mapping(address => uint256) public addressToContributions;
 
-  uint256 private constant MINIMUM_CONTRIBUTION = 0.01 ether;
-  uint256 private constant PROJECT_TIME_LENGTH_SECONDS = 30 days;
+  uint256 public constant MINIMUM_CONTRIBUTION = 0.01 ether;
+  uint256 public constant PROJECT_TIME_LENGTH_SECONDS = 30 days;
 
   event Contribution(address from, address project, uint256 amount);
   event Refunded(address to, address project, uint256 amount);
   event Withdrawn(address to, address project, uint256 amount);
+
+  modifier hasMintableNFTs() {
+    uint256 addressNFTs = balanceOf(msg.sender);
+    uint256 wholeEthContributed = addressToContributions[msg.sender] / 1;
+    require(
+      addressNFTs < wholeEthContributed,
+      "Project: no available NFTs to mint"
+    );
+    _;
+  }
 
   modifier isNotExpiredProject() {
     require(
@@ -56,13 +70,14 @@ contract Project is Ownable {
   constructor(
     string memory _name,
     string memory _description,
+    string memory _tokenSymbol,
     uint256 _fundraisingGoal,
     address _projectOwner
-  ) payable Ownable(_projectOwner) {
-    name = _name;
+  ) payable ERC721(_name, _tokenSymbol) {
+    transferOwnership(_projectOwner);
+
     description = _description;
     fundraisingGoal = _fundraisingGoal;
-
     projectEndTimeSeconds = block.timestamp + PROJECT_TIME_LENGTH_SECONDS;
   }
 
@@ -81,7 +96,12 @@ contract Project is Ownable {
     isCancelled = true;
   }
 
-  function withdrawCancelledProjectFunds() external payable isCancelledProject {
+  function withdrawCancelledProjectFunds() external isCancelledProject {
+    require(
+      addressToContributions[msg.sender] > 0,
+      "Project: address has not contributions"
+    );
+
     uint256 addressContributions = addressToContributions[msg.sender];
     addressToContributions[msg.sender] = 0;
     (bool success, ) = msg.sender.call{ value: addressContributions }("");
@@ -91,7 +111,6 @@ contract Project is Ownable {
 
   function withdrawCompletedProjectFunds()
     external
-    payable
     onlyOwner
     isNotCancelledProject
     isExpiredProject
@@ -104,7 +123,18 @@ contract Project is Ownable {
     emit Withdrawn(msg.sender, address(this), contractBalance);
   }
 
-  function mintNFTs() external isNotCancelledProject isExpiredProject {
-    // finish
+  function mintNFT()
+    external
+    isNotCancelledProject
+    isExpiredProject
+    hasMintableNFTs
+    returns (uint256)
+  {
+    uint256 newTokenId = tokenIds.current();
+    _safeMint(msg.sender, newTokenId);
+
+    tokenIds.increment();
+
+    return newTokenId;
   }
 }
