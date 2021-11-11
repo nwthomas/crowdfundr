@@ -40,7 +40,53 @@ describe("Manager", () => {
   };
 
   describe("deploy", () => {
-    // finish
+    it("assigns state variables for project on deploy", async () => {
+      const project = await getDeployedContract(
+        "Project",
+        "Name",
+        "Description",
+        "Symbol",
+        1
+      );
+
+      const nameTxn = await project.name();
+      expect(nameTxn).to.equal("Name");
+
+      const descriptionTxn = await project.description();
+      expect(descriptionTxn).to.equal("Description");
+
+      const symbolTxn = await project.symbol();
+      expect(symbolTxn).to.equal("Symbol");
+
+      const fundraisingGoal = await project.fundraisingGoal();
+      expect(fundraisingGoal).to.equal(1);
+    });
+
+    it("reassigns ownership on deployment using address argument", async () => {
+      const project = await getDeployedContract(
+        "Project",
+        "Test",
+        "Test description",
+        "TEST",
+        1000,
+        thirdAddress.address
+      );
+      const ownershipTxn = await project.owner();
+      expect(ownershipTxn).to.equal(thirdAddress.address);
+    });
+
+    it("correctly sets end time for project", async () => {
+      const currentTimestamp = Date.now();
+      await ethers.provider.send("evm_setNextBlockTimestamp", [
+        currentTimestamp,
+      ]);
+      const project = await getDeployedContract("Project");
+
+      const projectEndTimeTxn = await project.projectEndTimeSeconds();
+      expect(projectEndTimeTxn).to.equal(
+        `${currentTimestamp + 60 * 60 * 24 * 30}`
+      );
+    });
   });
 
   describe("ownership", () => {
@@ -122,7 +168,7 @@ describe("Manager", () => {
     // finish
   });
 
-  describe("mint NFT", () => {
+  describe("NFTs", () => {
     // finish
   });
 });

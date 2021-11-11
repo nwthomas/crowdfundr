@@ -17,7 +17,7 @@ contract Project is Ownable, ERC721 {
   mapping(address => uint256) public addressToContributions;
 
   uint256 public constant MINIMUM_CONTRIBUTION = 0.01 ether;
-  uint256 public constant PROJECT_TIME_LENGTH_SECONDS = 30 days;
+  uint256 public constant PROJECT_TIME_LENGTH_SECONDS = 60 * 60 * 24 * 30;
 
   event Contribution(address indexed from, address indexed project, uint256 indexed amount);
   event Refunded(address indexed to, address indexed project, uint256 indexed amount);
