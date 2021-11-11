@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
-import "./Project.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "./Project.sol";
 
-contract ProjectFactory is Ownable {
+contract Manager is Ownable {
   Project[] public projects;
   mapping(address => uint256[]) public ownerToProjects;
 
