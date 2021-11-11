@@ -60,6 +60,24 @@ describe("Manager", () => {
         .withArgs(ownerAddress.address, secondAddress.address);
     });
 
+    it("throws error when non-owner attempts transfer", async () => {
+      const project = await getDeployedContract("Project");
+
+      let error;
+      try {
+        await project
+          .connect(secondAddress)
+          .transferOwnership(secondAddress.address);
+      } catch (newError) {
+        error = newError;
+      }
+
+      expect(error instanceof Error).to.equal(true);
+      expect(String(error)).to.equal(
+        "Error: VM Exception while processing transaction: reverted with reason string 'Ownable: caller is not the owner'"
+      );
+    });
+
     it("renounces ownership", async () => {
       const project = await getDeployedContract("Project");
       const renounceOwnershipTxn = project.renounceOwnership();
@@ -69,6 +87,22 @@ describe("Manager", () => {
           ownerAddress.address,
           "0x0000000000000000000000000000000000000000"
         );
+    });
+
+    it("throws error when non-owner attempts renouncing ownership", async () => {
+      const project = await getDeployedContract("Project");
+
+      let error;
+      try {
+        await project.connect(secondAddress).renounceOwnership();
+      } catch (newError) {
+        error = newError;
+      }
+
+      expect(error instanceof Error).to.equal(true);
+      expect(String(error)).to.equal(
+        "Error: VM Exception while processing transaction: reverted with reason string 'Ownable: caller is not the owner'"
+      );
     });
   });
 
