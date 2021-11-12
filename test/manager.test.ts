@@ -19,8 +19,8 @@ describe("Manager", () => {
     thirdAddress = third;
   });
 
-  const getDeployedContract = async (contractName: string) => {
-    const contractFactory = await ethers.getContractFactory(contractName);
+  const getDeployedContract = async () => {
+    const contractFactory = await ethers.getContractFactory("Manager");
     const contract = await contractFactory.deploy();
 
     return contract;
@@ -28,7 +28,7 @@ describe("Manager", () => {
 
   describe("deploy", () => {
     it("deploys a new contract", async () => {
-      const manager = await getDeployedContract("Manager");
+      const manager = await getDeployedContract();
       expect(manager.address).to.equal(
         "0x5FbDB2315678afecb367f032d93F642f64180aa3"
       );
@@ -37,13 +37,13 @@ describe("Manager", () => {
 
   describe("ownership", () => {
     it("instantiates a new contract with owner", async () => {
-      const manager = await getDeployedContract("Manager");
+      const manager = await getDeployedContract();
       const owner = await manager.owner();
       expect(owner).to.equal(ownerAddress.address);
     });
 
     it("transfers ownership", async () => {
-      const manager = await getDeployedContract("Manager");
+      const manager = await getDeployedContract();
       const transferOwnershipTxn = await manager.transferOwnership(
         secondAddress.address
       );
@@ -53,7 +53,7 @@ describe("Manager", () => {
     });
 
     it("throws error when non-owner attempts transfer", async () => {
-      const manager = await getDeployedContract("Manager");
+      const manager = await getDeployedContract();
 
       let error;
       try {
@@ -71,7 +71,7 @@ describe("Manager", () => {
     });
 
     it("renounces ownership", async () => {
-      const manager = await getDeployedContract("Manager");
+      const manager = await getDeployedContract();
       const renounceOwnershipTxn = manager.renounceOwnership();
       expect(renounceOwnershipTxn)
         .to.emit(manager, "OwnershipTransferred")
@@ -82,7 +82,7 @@ describe("Manager", () => {
     });
 
     it("throws error when non-owner attempts renouncing ownership", async () => {
-      const manager = await getDeployedContract("Manager");
+      const manager = await getDeployedContract();
 
       let error;
       try {
@@ -100,7 +100,7 @@ describe("Manager", () => {
 
   describe("createNewProject", () => {
     it("allows the owner to create a new project", async () => {
-      const manager = await getDeployedContract("Manager");
+      const manager = await getDeployedContract();
       const newProjectTxn = await manager.createNewProject(
         "Test Name",
         "Test description",
@@ -117,7 +117,7 @@ describe("Manager", () => {
     });
 
     it("allows any address to create a new project", async () => {
-      const manager = await getDeployedContract("Manager");
+      const manager = await getDeployedContract();
       const newProjectTxn = await manager
         .connect(thirdAddress)
         .createNewProject(
@@ -136,7 +136,7 @@ describe("Manager", () => {
     });
 
     it("tracks new projects in array", async () => {
-      const manager = await getDeployedContract("Manager");
+      const manager = await getDeployedContract();
       await manager
         .connect(secondAddress)
         .createNewProject(
@@ -164,7 +164,7 @@ describe("Manager", () => {
     });
 
     it("tracks ownership of projects with projects array index reference", async () => {
-      const manager = await getDeployedContract("Manager");
+      const manager = await getDeployedContract();
       await manager.createNewProject(
         "Test Name 1",
         "Test description 1",

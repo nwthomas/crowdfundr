@@ -21,19 +21,16 @@ describe("Project", () => {
     await ethers.provider.send("evm_revert", ["0x0"]);
   });
 
-  const getDeployedContract = async (
-    contractName: string,
-    args?: {
-      name?: string;
-      description?: string;
-      tokenSymbol?: string;
-      fundraisingGoal?: string;
-      projectOwner?: string;
-    }
-  ) => {
+  const getDeployedContract = async (args?: {
+    name?: string;
+    description?: string;
+    tokenSymbol?: string;
+    fundraisingGoal?: string;
+    projectOwner?: string;
+  }) => {
     const { name, description, tokenSymbol, fundraisingGoal, projectOwner } =
       args || {};
-    const contractFactory = await ethers.getContractFactory(contractName);
+    const contractFactory = await ethers.getContractFactory("Project");
     const contract = await contractFactory.deploy(
       name || "Test Name",
       description || "Test description",
@@ -47,7 +44,7 @@ describe("Project", () => {
 
   describe("deploy", () => {
     it("assigns state variables for project on deploy", async () => {
-      const project = await getDeployedContract("Project", {
+      const project = await getDeployedContract({
         name: "This is a name",
         description: "This is a description",
         tokenSymbol: "This is a symbol",
@@ -68,7 +65,7 @@ describe("Project", () => {
     });
 
     it("reassigns ownership on deployment using address argument", async () => {
-      const project = await getDeployedContract("Project", {
+      const project = await getDeployedContract({
         fundraisingGoal: "1000",
         projectOwner: thirdAddress.address,
       });
@@ -81,7 +78,7 @@ describe("Project", () => {
       await ethers.provider.send("evm_setNextBlockTimestamp", [
         currentTimestamp,
       ]);
-      const project = await getDeployedContract("Project");
+      const project = await getDeployedContract();
 
       const projectEndTimeTxn = await project.projectEndTimeSeconds();
       expect(projectEndTimeTxn).to.equal(
@@ -92,13 +89,13 @@ describe("Project", () => {
 
   describe("ownership", () => {
     it("instantiates a new contract with owner", async () => {
-      const project = await getDeployedContract("Project");
+      const project = await getDeployedContract();
       const owner = await project.owner();
       expect(owner).to.equal(ownerAddress.address);
     });
 
     it("transfers ownership", async () => {
-      const project = await getDeployedContract("Project");
+      const project = await getDeployedContract();
       const transferOwnershipTxn = await project.transferOwnership(
         secondAddress.address
       );
@@ -108,7 +105,7 @@ describe("Project", () => {
     });
 
     it("throws error when non-owner attempts transfer", async () => {
-      const project = await getDeployedContract("Project");
+      const project = await getDeployedContract();
 
       let error;
       try {
@@ -125,7 +122,7 @@ describe("Project", () => {
     });
 
     it("renounces ownership", async () => {
-      const project = await getDeployedContract("Project");
+      const project = await getDeployedContract();
       const renounceOwnershipTxn = project.renounceOwnership();
       expect(renounceOwnershipTxn)
         .to.emit(project, "OwnershipTransferred")
@@ -136,7 +133,7 @@ describe("Project", () => {
     });
 
     it("throws error when non-owner attempts renouncing ownership", async () => {
-      const project = await getDeployedContract("Project");
+      const project = await getDeployedContract();
 
       let error;
       try {
@@ -153,7 +150,7 @@ describe("Project", () => {
 
   describe("receive", () => {
     it("allows the owner to contribute", async () => {
-      const project = await getDeployedContract("Project");
+      const project = await getDeployedContract();
 
       await ownerAddress.sendTransaction({
         to: project.address,
@@ -167,7 +164,7 @@ describe("Project", () => {
     });
 
     it("allows multiple addresses to contribute", async () => {
-      const project = await getDeployedContract("Project");
+      const project = await getDeployedContract();
 
       await secondAddress.sendTransaction({
         to: project.address,
@@ -193,7 +190,7 @@ describe("Project", () => {
     });
 
     it("allows the same address to contribute multiple times", async () => {
-      const project = await getDeployedContract("Project", {
+      const project = await getDeployedContract({
         fundraisingGoal: ethers.utils.parseEther("10").toString(),
       });
 
@@ -213,7 +210,7 @@ describe("Project", () => {
     });
 
     it("sets the isFinished boolean to true when balance >= fundraising goal", async () => {
-      const project = await getDeployedContract("Project", {
+      const project = await getDeployedContract({
         fundraisingGoal: ethers.utils.parseEther("0.01").toString(),
       });
       await thirdAddress.sendTransaction({
@@ -226,7 +223,7 @@ describe("Project", () => {
     });
 
     it("emits a Contribution event", async () => {
-      const project = await getDeployedContract("Project");
+      const project = await getDeployedContract();
 
       const contributionTxn = await secondAddress.sendTransaction({
         to: project.address,
@@ -242,7 +239,7 @@ describe("Project", () => {
     });
 
     it("throws error if the project is cancelled", async () => {
-      const project = await getDeployedContract("Project");
+      const project = await getDeployedContract();
       await project.cancelProject();
 
       let error;
@@ -263,7 +260,7 @@ describe("Project", () => {
     // it("throw error if time limit has expired", async () => {
     //   const currentTime = Date.now();
     //   await ethers.provider.send("evm_setNextBlockTimestamp", [currentTime]);
-    //   const project = await getDeployedContract("Project");
+    //   const project = await getDeployedContract();
 
     //   await ethers.provider.send("evm_setNextBlockTimestamp", [
     //     currentTime + 60 * 60 * 24 * 30,
@@ -285,7 +282,7 @@ describe("Project", () => {
     // });
 
     it("throws error if the project is finished successfully", async () => {
-      const project = await getDeployedContract("Project", {
+      const project = await getDeployedContract({
         fundraisingGoal: ethers.utils.parseEther("0.01").toString(),
       });
       await ownerAddress.sendTransaction({
@@ -309,7 +306,7 @@ describe("Project", () => {
     });
 
     it("throws error if contribution is below the minimum required 0.01 ether", async () => {
-      const project = await getDeployedContract("Project");
+      const project = await getDeployedContract();
 
       let error;
       try {
@@ -329,7 +326,7 @@ describe("Project", () => {
 
   describe("cancelProject", () => {
     it("cancels a project when the owner calls it", async () => {
-      const project = await getDeployedContract("Project");
+      const project = await getDeployedContract();
       await project.cancelProject();
 
       const isCancelledTxn = await project.isCancelled();
@@ -337,7 +334,7 @@ describe("Project", () => {
     });
 
     it("throws error when non-owner address calls it", async () => {
-      const project = await getDeployedContract("Project");
+      const project = await getDeployedContract();
 
       let error;
       try {
@@ -352,7 +349,7 @@ describe("Project", () => {
     });
 
     it("throws error when project is cancelled already", async () => {
-      const project = await getDeployedContract("Project");
+      const project = await getDeployedContract();
       await project.cancelProject();
 
       let error;
@@ -370,7 +367,7 @@ describe("Project", () => {
     // it("throws error when project time limit has expired", async () => {
     //   const currentTime = Date.now();
     //   await ethers.provider.send("evm_setNextBlockTimestamp", [currentTime]);
-    //   const project = await getDeployedContract("Project");
+    //   const project = await getDeployedContract();
 
     //   await ethers.provider.send("evm_setNextBlockTimestamp", [
     //     currentTime + 60 * 60 * 24 * 30,
@@ -389,7 +386,7 @@ describe("Project", () => {
     // });
 
     it("throws error when project is finished successfully", async () => {
-      const project = await getDeployedContract("Project", {
+      const project = await getDeployedContract({
         fundraisingGoal: ethers.utils.parseEther("0.01").toString(),
       });
       await ownerAddress.sendTransaction({
@@ -412,7 +409,7 @@ describe("Project", () => {
 
   describe("refundCancelledProjectFunds", () => {
     it("allows address to refund and updates addressToContributions state", async () => {
-      const project = await getDeployedContract("Project");
+      const project = await getDeployedContract();
       await secondAddress.sendTransaction({
         to: project.address,
         value: ethers.utils.parseEther("1"),
@@ -428,7 +425,7 @@ describe("Project", () => {
     });
 
     it("emits event when address refunds", async () => {
-      const project = await getDeployedContract("Project");
+      const project = await getDeployedContract();
       await secondAddress.sendTransaction({
         to: project.address,
         value: ethers.utils.parseEther("1"),
@@ -448,7 +445,7 @@ describe("Project", () => {
     });
 
     it("throws error if project is not cancelled", async () => {
-      const project = await getDeployedContract("Project");
+      const project = await getDeployedContract();
 
       let error;
       try {
@@ -463,7 +460,7 @@ describe("Project", () => {
     });
 
     it("throws error if project is finished successfully", async () => {
-      const project = await getDeployedContract("Project", {
+      const project = await getDeployedContract({
         fundraisingGoal: ethers.utils.parseEther("1").toString(),
       });
       await secondAddress.sendTransaction({
@@ -484,7 +481,7 @@ describe("Project", () => {
     });
 
     it("throws error if address has not contributions", async () => {
-      const project = await getDeployedContract("Project");
+      const project = await getDeployedContract();
       await project.cancelProject();
 
       let error;
@@ -502,7 +499,7 @@ describe("Project", () => {
     // it("throws error if time limit has expired and not finished successfully", async () => {
     //   const currentTime = Date.now();
     //   await ethers.provider.send("evm_setNextBlockTimestamp", [currentTime]);
-    //   const project = await getDeployedContract("Project");
+    //   const project = await getDeployedContract();
 
     //   await secondAddress.sendTransaction({
     //     to: project.address,
@@ -526,7 +523,7 @@ describe("Project", () => {
 
   describe("withdrawCompletedProjectFunds", () => {
     it("allows owner to withdraw funds and emits Withdraw event", async () => {
-      const project = await getDeployedContract("Project", {
+      const project = await getDeployedContract({
         fundraisingGoal: ethers.utils.parseEther("1").toString(),
       });
       await secondAddress.sendTransaction({
@@ -545,7 +542,7 @@ describe("Project", () => {
     });
 
     it("throws error if project is not finished successfully", async () => {
-      const project = await getDeployedContract("Project");
+      const project = await getDeployedContract();
 
       let error;
       try {
@@ -560,7 +557,7 @@ describe("Project", () => {
     });
 
     it("throws error if address is not owner", async () => {
-      const project = await getDeployedContract("Project", {
+      const project = await getDeployedContract({
         fundraisingGoal: ethers.utils.parseEther("1").toString(),
       });
       await secondAddress.sendTransaction({
@@ -583,7 +580,7 @@ describe("Project", () => {
 
   describe("NFTs", () => {
     it("allows contributor with >= 1 eth to mint an NFT badge", async () => {
-      const project = await getDeployedContract("Project");
+      const project = await getDeployedContract();
       await secondAddress.sendTransaction({
         to: project.address,
         value: ethers.utils.parseEther("1"),
@@ -597,7 +594,7 @@ describe("Project", () => {
     });
 
     it("allows address to mint multiple NFTs for each eth contributed", async () => {
-      const project = await getDeployedContract("Project");
+      const project = await getDeployedContract();
       await secondAddress.sendTransaction({
         to: project.address,
         value: ethers.utils.parseEther("1"),
@@ -616,7 +613,7 @@ describe("Project", () => {
     });
 
     it("allows addresses to mint even if project is cancelled", async () => {
-      const project = await getDeployedContract("Project");
+      const project = await getDeployedContract();
       await secondAddress.sendTransaction({
         to: project.address,
         value: ethers.utils.parseEther("2"),
@@ -632,7 +629,7 @@ describe("Project", () => {
     });
 
     it("throws error if no more NFT badges are available to claim", async () => {
-      const project = await getDeployedContract("Project");
+      const project = await getDeployedContract();
       await secondAddress.sendTransaction({
         to: project.address,
         value: ethers.utils.parseEther("1"),
@@ -652,7 +649,7 @@ describe("Project", () => {
     });
 
     it("throws error if address has not contributed", async () => {
-      const project = await getDeployedContract("Project");
+      const project = await getDeployedContract();
 
       let error;
       try {
