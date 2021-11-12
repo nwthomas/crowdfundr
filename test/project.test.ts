@@ -18,7 +18,7 @@ describe("Project", () => {
     secondAddress = second;
     thirdAddress = third;
 
-    await ethers.provider.send("evm_revert", ["0x0"]);
+    await ethers.provider.send("evm_revert", ["0x1"]);
   });
 
   const getDeployedProjectContract = async (args?: {
@@ -366,13 +366,10 @@ describe("Project", () => {
     });
 
     it("throws error when project time limit has expired", async () => {
-      const currentTime = Date.now();
-      await ethers.provider.send("evm_setNextBlockTimestamp", [currentTime]);
       const project = await getDeployedProjectContract();
 
-      await ethers.provider.send("evm_setNextBlockTimestamp", [
-        currentTime + 60 * 60 * 24 * 30,
-      ]);
+      await ethers.provider.send("evm_increaseTime", [60 * 60 * 24 * 30]);
+      await ethers.provider.send("evm_mine", []);
 
       let error;
       try {
@@ -416,6 +413,25 @@ describe("Project", () => {
         value: ethers.utils.parseEther("1"),
       });
       await project.cancelProject();
+
+      await project.connect(secondAddress).refundCancelledProjectFunds();
+      const secondAddressBalanceTxn = await project.addressToContributions(
+        secondAddress.address
+      );
+
+      expect(secondAddressBalanceTxn.toNumber()).to.equal(0);
+    });
+
+    it("allows address to refund if time limit has expired and not finished successfully", async () => {
+      const project = await getDeployedProjectContract();
+
+      await secondAddress.sendTransaction({
+        to: project.address,
+        value: ethers.utils.parseEther("1"),
+      });
+
+      await ethers.provider.send("evm_increaseTime", [60 * 60 * 24 * 30]);
+      await ethers.provider.send("evm_mine", []);
 
       await project.connect(secondAddress).refundCancelledProjectFunds();
       const secondAddressBalanceTxn = await project.addressToContributions(
@@ -481,7 +497,31 @@ describe("Project", () => {
       ).to.equal(true);
     });
 
-    it("throws error if address has not contributions", async () => {
+    it("throws error if project is funded and past time limit", async () => {
+      const project = await getDeployedProjectContract({
+        fundraisingGoal: ethers.utils.parseEther("1").toString(),
+      });
+      await secondAddress.sendTransaction({
+        to: project.address,
+        value: ethers.utils.parseEther("1"),
+      });
+
+      await ethers.provider.send("evm_increaseTime", [60 * 60 * 24 * 30]);
+      await ethers.provider.send("evm_mine", []);
+
+      let error;
+      try {
+        await project.connect(secondAddress).refundCancelledProjectFunds();
+      } catch (newError) {
+        error = newError;
+      }
+
+      expect(
+        String(error).indexOf("Project: cannot refund project funds") > -1
+      ).to.equal(true);
+    });
+
+    it("throws error if address has no contributions", async () => {
       const project = await getDeployedProjectContract();
       await project.cancelProject();
 
@@ -495,30 +535,6 @@ describe("Project", () => {
       expect(
         String(error).indexOf("Project: address has no contributions") > -1
       ).to.equal(true);
-    });
-
-    it("throws error if time limit has expired and not finished successfully", async () => {
-      const currentTime = Date.now();
-      await ethers.provider.send("evm_setNextBlockTimestamp", [currentTime]);
-      const project = await getDeployedProjectContract();
-
-      await secondAddress.sendTransaction({
-        to: project.address,
-        value: ethers.utils.parseEther("1"),
-      });
-
-      await ethers.provider.send("evm_setNextBlockTimestamp", [
-        currentTime + 60 * 60 * 24 * 30,
-      ]);
-
-      let error;
-      try {
-        await project.connect(secondAddress).refundCancelledProjectFunds();
-      } catch (newError) {
-        error = newError;
-      }
-
-      expect(String(error)).to.equal("");
     });
   });
 
