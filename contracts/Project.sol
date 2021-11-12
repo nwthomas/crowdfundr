@@ -5,8 +5,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
-import "hardhat/console.sol";
-
 contract Project is Ownable, ERC721 {
   using Counters for Counters.Counter;
   Counters.Counter private tokenIds;
@@ -40,7 +38,8 @@ contract Project is Ownable, ERC721 {
 
   modifier hasMintableNFTs() {
     require(
-      balanceOf(msg.sender) + 1 < addressToContributions[msg.sender],
+      balanceOf(msg.sender) <
+        addressToContributions[msg.sender] / 1000000000000000000,
       "Project: no available NFTs to mint"
     );
     _;
@@ -133,13 +132,10 @@ contract Project is Ownable, ERC721 {
     emit Withdraw(msg.sender, address(this), contractBalance);
   }
 
-  function mintNFT() external hasMintableNFTs returns (uint256) {
-    console.log("running");
+  function mintNFT() external hasMintableNFTs {
     uint256 newTokenId = tokenIds.current();
     _safeMint(msg.sender, newTokenId);
 
     tokenIds.increment();
-
-    return newTokenId;
   }
 }

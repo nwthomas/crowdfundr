@@ -610,7 +610,7 @@ describe("Project", () => {
     });
   });
 
-  describe.only("NFTs", () => {
+  describe("NFTs", () => {
     it("allows contributor with >= 1 eth to mint an NFT badge", async () => {
       const project = await getDeployedContract("Project");
       await secondAddress.sendTransaction({
@@ -644,7 +644,23 @@ describe("Project", () => {
       expect(secondAddressNFTBalance).to.equal(2);
     });
 
-    it("throws an error if no more NFT badges are available to claim", async () => {
+    it("allows addresses to mint even if project is cancelled", async () => {
+      const project = await getDeployedContract("Project");
+      await secondAddress.sendTransaction({
+        to: project.address,
+        value: ethers.utils.parseEther("2"),
+      });
+
+      await project.cancelProject();
+      await project.connect(secondAddress).mintNFT();
+
+      const secondAddressNFTBalance = await project.balanceOf(
+        secondAddress.address
+      );
+      expect(secondAddressNFTBalance).to.equal(1);
+    });
+
+    it("throws error if no more NFT badges are available to claim", async () => {
       const project = await getDeployedContract("Project");
       await secondAddress.sendTransaction({
         to: project.address,
@@ -660,7 +676,22 @@ describe("Project", () => {
       }
 
       expect(String(error)).to.equal(
-        "VM Exception while processing transaction: reverted with reason string 'Project: no available NFTs to mint'"
+        "Error: VM Exception while processing transaction: reverted with reason string 'Project: no available NFTs to mint'"
+      );
+    });
+
+    it("throws error if address has not contributed", async () => {
+      const project = await getDeployedContract("Project");
+
+      let error;
+      try {
+        await project.connect(secondAddress).mintNFT();
+      } catch (newError) {
+        error = newError;
+      }
+
+      expect(String(error)).to.equal(
+        "Error: VM Exception while processing transaction: reverted with reason string 'Project: no available NFTs to mint'"
       );
     });
   });

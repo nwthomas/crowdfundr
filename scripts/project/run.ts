@@ -7,12 +7,19 @@ async function main() {
     "Name",
     "Description",
     "TEST",
-    ethers.utils.parseEther("1").toString(),
+    ethers.utils.parseEther("10").toString(),
     ownerAddress.address
   );
   await project.deployed();
-
   console.log("Project deployed to:", project.address);
+
+  await ownerAddress.sendTransaction({
+    to: project.address,
+    value: ethers.utils.parseEther("1"),
+  });
+
+  await project.mintNFT();
+  await project.mintNFT();
 }
 
 main().catch((error) => {
