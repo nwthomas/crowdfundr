@@ -1,6 +1,11 @@
-## CROWDFUNDR
+# CROWDFUNDR
 
-Initial description:
+## TABLE OF CONTENTS
+
+- [Description](#description)
+- [Design Exercises](#design-exercises)
+
+## DESCRIPTION
 
 ```
 "Build a smart contract that allows creators to register their projects. Other people can contribute ETH to that project. Once the goal has been met, the creators can withdraw the funds. When someone contributes 1 ETH, they receive a contributor badge NFT, which is tradable."
@@ -32,3 +37,7 @@ Upon further examination, the following specifications were also revealed:
   - The creator can withdraw any amount of contributed funds.
 - The creator can choose to cancel their project before the 30 days are over, which has the same effect as a project failing.
 ```
+
+## DESIGN EXERCISES
+
+TODO

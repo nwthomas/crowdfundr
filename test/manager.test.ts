@@ -86,9 +86,11 @@ describe("Manager", () => {
       }
 
       expect(error instanceof Error).to.equal(true);
-      expect(String(error)).to.equal(
-        "Error: VM Exception while processing transaction: reverted with reason string 'Ownable: caller is not the owner'"
-      );
+      expect(
+        String(error).indexOf(
+          "VM Exception while processing transaction: reverted with reason string 'Ownable: caller is not the owner'"
+        ) > -1
+      ).to.equal(true);
     });
 
     it("renounces ownership", async () => {
@@ -113,9 +115,11 @@ describe("Manager", () => {
       }
 
       expect(error instanceof Error).to.equal(true);
-      expect(String(error)).to.equal(
-        "Error: VM Exception while processing transaction: reverted with reason string 'Ownable: caller is not the owner'"
-      );
+      expect(
+        String(error).indexOf(
+          "VM Exception while processing transaction: reverted with reason string 'Ownable: caller is not the owner'"
+        ) > -1
+      ).to.equal(true);
     });
   });
 

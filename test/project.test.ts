@@ -21,7 +21,7 @@ describe("Project", () => {
     await ethers.provider.send("evm_revert", ["0x0"]);
   });
 
-  const getDeployedContract = async (args?: {
+  const getDeployedProjectContract = async (args?: {
     name?: string;
     description?: string;
     tokenSymbol?: string;
@@ -44,7 +44,7 @@ describe("Project", () => {
 
   describe("deploy", () => {
     it("assigns state variables for project on deploy", async () => {
-      const project = await getDeployedContract({
+      const project = await getDeployedProjectContract({
         name: "This is a name",
         description: "This is a description",
         tokenSymbol: "This is a symbol",
@@ -65,7 +65,7 @@ describe("Project", () => {
     });
 
     it("reassigns ownership on deployment using address argument", async () => {
-      const project = await getDeployedContract({
+      const project = await getDeployedProjectContract({
         fundraisingGoal: "1000",
         projectOwner: thirdAddress.address,
       });
@@ -78,7 +78,7 @@ describe("Project", () => {
       await ethers.provider.send("evm_setNextBlockTimestamp", [
         currentTimestamp,
       ]);
-      const project = await getDeployedContract();
+      const project = await getDeployedProjectContract();
 
       const projectEndTimeTxn = await project.projectEndTimeSeconds();
       expect(projectEndTimeTxn).to.equal(
@@ -89,13 +89,13 @@ describe("Project", () => {
 
   describe("ownership", () => {
     it("instantiates a new contract with owner", async () => {
-      const project = await getDeployedContract();
+      const project = await getDeployedProjectContract();
       const owner = await project.owner();
       expect(owner).to.equal(ownerAddress.address);
     });
 
     it("transfers ownership", async () => {
-      const project = await getDeployedContract();
+      const project = await getDeployedProjectContract();
       const transferOwnershipTxn = await project.transferOwnership(
         secondAddress.address
       );
@@ -105,7 +105,7 @@ describe("Project", () => {
     });
 
     it("throws error when non-owner attempts transfer", async () => {
-      const project = await getDeployedContract();
+      const project = await getDeployedProjectContract();
 
       let error;
       try {
@@ -116,13 +116,15 @@ describe("Project", () => {
         error = newError;
       }
 
-      expect(String(error)).to.equal(
-        "Error: VM Exception while processing transaction: reverted with reason string 'Ownable: caller is not the owner'"
-      );
+      expect(
+        String(error).indexOf(
+          "VM Exception while processing transaction: reverted with reason string 'Ownable: caller is not the owner'"
+        ) > -1
+      ).to.equal(true);
     });
 
     it("renounces ownership", async () => {
-      const project = await getDeployedContract();
+      const project = await getDeployedProjectContract();
       const renounceOwnershipTxn = project.renounceOwnership();
       expect(renounceOwnershipTxn)
         .to.emit(project, "OwnershipTransferred")
@@ -133,7 +135,7 @@ describe("Project", () => {
     });
 
     it("throws error when non-owner attempts renouncing ownership", async () => {
-      const project = await getDeployedContract();
+      const project = await getDeployedProjectContract();
 
       let error;
       try {
@@ -142,15 +144,17 @@ describe("Project", () => {
         error = newError;
       }
 
-      expect(String(error)).to.equal(
-        "Error: VM Exception while processing transaction: reverted with reason string 'Ownable: caller is not the owner'"
-      );
+      expect(
+        String(error).indexOf(
+          "VM Exception while processing transaction: reverted with reason string 'Ownable: caller is not the owner'"
+        ) > -1
+      ).to.equal(true);
     });
   });
 
   describe("receive", () => {
     it("allows the owner to contribute", async () => {
-      const project = await getDeployedContract();
+      const project = await getDeployedProjectContract();
 
       await ownerAddress.sendTransaction({
         to: project.address,
@@ -164,7 +168,7 @@ describe("Project", () => {
     });
 
     it("allows multiple addresses to contribute", async () => {
-      const project = await getDeployedContract();
+      const project = await getDeployedProjectContract();
 
       await secondAddress.sendTransaction({
         to: project.address,
@@ -190,7 +194,7 @@ describe("Project", () => {
     });
 
     it("allows the same address to contribute multiple times", async () => {
-      const project = await getDeployedContract({
+      const project = await getDeployedProjectContract({
         fundraisingGoal: ethers.utils.parseEther("10").toString(),
       });
 
@@ -210,7 +214,7 @@ describe("Project", () => {
     });
 
     it("sets the isFinished boolean to true when balance >= fundraising goal", async () => {
-      const project = await getDeployedContract({
+      const project = await getDeployedProjectContract({
         fundraisingGoal: ethers.utils.parseEther("0.01").toString(),
       });
       await thirdAddress.sendTransaction({
@@ -223,7 +227,7 @@ describe("Project", () => {
     });
 
     it("emits a Contribution event", async () => {
-      const project = await getDeployedContract();
+      const project = await getDeployedProjectContract();
 
       const contributionTxn = await secondAddress.sendTransaction({
         to: project.address,
@@ -239,7 +243,7 @@ describe("Project", () => {
     });
 
     it("throws error if the project is cancelled", async () => {
-      const project = await getDeployedContract();
+      const project = await getDeployedProjectContract();
       await project.cancelProject();
 
       let error;
@@ -252,37 +256,41 @@ describe("Project", () => {
         error = newError;
       }
 
-      expect(String(error)).to.equal(
-        "Error: VM Exception while processing transaction: reverted with reason string 'Project: project is cancelled'"
-      );
+      expect(
+        String(error).indexOf(
+          "VM Exception while processing transaction: reverted with reason string 'Project: project is cancelled'"
+        ) > -1
+      ).to.equal(true);
     });
 
-    // it("throw error if time limit has expired", async () => {
-    //   const currentTime = Date.now();
-    //   await ethers.provider.send("evm_setNextBlockTimestamp", [currentTime]);
-    //   const project = await getDeployedContract();
+    it("throw error if time limit has expired", async () => {
+      const currentTime = Date.now();
+      await ethers.provider.send("evm_setNextBlockTimestamp", [currentTime]);
+      const project = await getDeployedProjectContract();
 
-    //   await ethers.provider.send("evm_setNextBlockTimestamp", [
-    //     currentTime + 60 * 60 * 24 * 30,
-    //   ]);
+      await ethers.provider.send("evm_setNextBlockTimestamp", [
+        currentTime + 60 * 60 * 24 * 30,
+      ]);
 
-    //   let error;
-    //   try {
-    //     await thirdAddress.sendTransaction({
-    //       to: project.address,
-    //       value: ethers.utils.parseEther("0.01"),
-    //     });
-    //   } catch (newError) {
-    //     error = newError;
-    //   }
+      let error;
+      try {
+        await thirdAddress.sendTransaction({
+          to: project.address,
+          value: ethers.utils.parseEther("0.01"),
+        });
+      } catch (newError) {
+        error = newError;
+      }
 
-    //   expect(String(error)).to.equal(
-    //     "Error: VM Exception while processing transaction: reverted with reason string 'Project: time limit for project expired'"
-    //   );
-    // });
+      expect(
+        String(error).indexOf(
+          "VM Exception while processing transaction: reverted with reason string 'Project: time limit for project expired'"
+        ) > -1
+      ).to.equal(true);
+    });
 
     it("throws error if the project is finished successfully", async () => {
-      const project = await getDeployedContract({
+      const project = await getDeployedProjectContract({
         fundraisingGoal: ethers.utils.parseEther("0.01").toString(),
       });
       await ownerAddress.sendTransaction({
@@ -300,13 +308,15 @@ describe("Project", () => {
         error = newError;
       }
 
-      expect(String(error)).to.equal(
-        "Error: VM Exception while processing transaction: reverted with reason string 'Project: project has finished'"
-      );
+      expect(
+        String(error).indexOf(
+          "VM Exception while processing transaction: reverted with reason string 'Project: project has finished'"
+        ) > -1
+      ).to.equal(true);
     });
 
     it("throws error if contribution is below the minimum required 0.01 ether", async () => {
-      const project = await getDeployedContract();
+      const project = await getDeployedProjectContract();
 
       let error;
       try {
@@ -318,15 +328,17 @@ describe("Project", () => {
         error = newError;
       }
 
-      expect(String(error)).to.equal(
-        "Error: VM Exception while processing transaction: reverted with reason string 'Project: contribution must be >= 0.01 ether'"
-      );
+      expect(
+        String(error).indexOf(
+          "VM Exception while processing transaction: reverted with reason string 'Project: contribution must be >= 0.01 ether'"
+        ) > -1
+      ).to.equal(true);
     });
   });
 
   describe("cancelProject", () => {
     it("cancels a project when the owner calls it", async () => {
-      const project = await getDeployedContract();
+      const project = await getDeployedProjectContract();
       await project.cancelProject();
 
       const isCancelledTxn = await project.isCancelled();
@@ -334,7 +346,7 @@ describe("Project", () => {
     });
 
     it("throws error when non-owner address calls it", async () => {
-      const project = await getDeployedContract();
+      const project = await getDeployedProjectContract();
 
       let error;
       try {
@@ -343,13 +355,15 @@ describe("Project", () => {
         error = newError;
       }
 
-      expect(String(error)).to.equal(
-        "Error: VM Exception while processing transaction: reverted with reason string 'Ownable: caller is not the owner'"
-      );
+      expect(
+        String(error).indexOf(
+          "VM Exception while processing transaction: reverted with reason string 'Ownable: caller is not the owner'"
+        ) > -1
+      ).to.equal(true);
     });
 
     it("throws error when project is cancelled already", async () => {
-      const project = await getDeployedContract();
+      const project = await getDeployedProjectContract();
       await project.cancelProject();
 
       let error;
@@ -359,34 +373,38 @@ describe("Project", () => {
         error = newError;
       }
 
-      expect(String(error)).to.equal(
-        "Error: VM Exception while processing transaction: reverted with reason string 'Project: project is cancelled'"
-      );
+      expect(
+        String(error).indexOf(
+          "VM Exception while processing transaction: reverted with reason string 'Project: project is cancelled'"
+        ) > -1
+      ).to.equal(true);
     });
 
-    // it("throws error when project time limit has expired", async () => {
-    //   const currentTime = Date.now();
-    //   await ethers.provider.send("evm_setNextBlockTimestamp", [currentTime]);
-    //   const project = await getDeployedContract();
+    it("throws error when project time limit has expired", async () => {
+      const currentTime = Date.now();
+      await ethers.provider.send("evm_setNextBlockTimestamp", [currentTime]);
+      const project = await getDeployedProjectContract();
 
-    //   await ethers.provider.send("evm_setNextBlockTimestamp", [
-    //     currentTime + 60 * 60 * 24 * 30,
-    //   ]);
+      await ethers.provider.send("evm_setNextBlockTimestamp", [
+        currentTime + 60 * 60 * 24 * 30,
+      ]);
 
-    //   let error;
-    //   try {
-    //     await project.cancelProject();
-    //   } catch (newError) {
-    //     error = newError;
-    //   }
+      let error;
+      try {
+        await project.cancelProject();
+      } catch (newError) {
+        error = newError;
+      }
 
-    //   expect(String(error)).to.equal(
-    //     "Error: VM Exception while processing transaction: reverted with reason string 'Project: time limit for project expired'"
-    //   );
-    // });
+      expect(
+        String(error).indexOf(
+          "VM Exception while processing transaction: reverted with reason string 'Project: time limit for project expired'"
+        ) > -1
+      ).to.equal(true);
+    });
 
     it("throws error when project is finished successfully", async () => {
-      const project = await getDeployedContract({
+      const project = await getDeployedProjectContract({
         fundraisingGoal: ethers.utils.parseEther("0.01").toString(),
       });
       await ownerAddress.sendTransaction({
@@ -401,15 +419,17 @@ describe("Project", () => {
         error = newError;
       }
 
-      expect(String(error)).to.equal(
-        "Error: VM Exception while processing transaction: reverted with reason string 'Project: project has finished'"
-      );
+      expect(
+        String(error).indexOf(
+          "VM Exception while processing transaction: reverted with reason string 'Project: project has finished'"
+        ) > -1
+      ).to.equal(true);
     });
   });
 
   describe("refundCancelledProjectFunds", () => {
     it("allows address to refund and updates addressToContributions state", async () => {
-      const project = await getDeployedContract();
+      const project = await getDeployedProjectContract();
       await secondAddress.sendTransaction({
         to: project.address,
         value: ethers.utils.parseEther("1"),
@@ -425,7 +445,7 @@ describe("Project", () => {
     });
 
     it("emits event when address refunds", async () => {
-      const project = await getDeployedContract();
+      const project = await getDeployedProjectContract();
       await secondAddress.sendTransaction({
         to: project.address,
         value: ethers.utils.parseEther("1"),
@@ -445,7 +465,7 @@ describe("Project", () => {
     });
 
     it("throws error if project is not cancelled", async () => {
-      const project = await getDeployedContract();
+      const project = await getDeployedProjectContract();
 
       let error;
       try {
@@ -454,13 +474,15 @@ describe("Project", () => {
         error = newError;
       }
 
-      expect(String(error)).to.equal(
-        "Error: VM Exception while processing transaction: reverted with reason string 'Project: cannot refund project funds'"
-      );
+      expect(
+        String(error).indexOf(
+          "VM Exception while processing transaction: reverted with reason string 'Project: cannot refund project funds'"
+        ) > -1
+      ).to.equal(true);
     });
 
     it("throws error if project is finished successfully", async () => {
-      const project = await getDeployedContract({
+      const project = await getDeployedProjectContract({
         fundraisingGoal: ethers.utils.parseEther("1").toString(),
       });
       await secondAddress.sendTransaction({
@@ -475,13 +497,15 @@ describe("Project", () => {
         error = newError;
       }
 
-      expect(String(error)).to.equal(
-        "Error: VM Exception while processing transaction: reverted with reason string 'Project: cannot refund project funds'"
-      );
+      expect(
+        String(error).indexOf(
+          "VM Exception while processing transaction: reverted with reason string 'Project: cannot refund project funds'"
+        ) > -1
+      ).to.equal(true);
     });
 
     it("throws error if address has not contributions", async () => {
-      const project = await getDeployedContract();
+      const project = await getDeployedProjectContract();
       await project.cancelProject();
 
       let error;
@@ -491,39 +515,41 @@ describe("Project", () => {
         error = newError;
       }
 
-      expect(String(error)).to.equal(
-        "Error: VM Exception while processing transaction: reverted with reason string 'Project: address has no contributions'"
-      );
+      expect(
+        String(error).indexOf(
+          "VM Exception while processing transaction: reverted with reason string 'Project: address has no contributions'"
+        ) > -1
+      ).to.equal(true);
     });
 
-    // it("throws error if time limit has expired and not finished successfully", async () => {
-    //   const currentTime = Date.now();
-    //   await ethers.provider.send("evm_setNextBlockTimestamp", [currentTime]);
-    //   const project = await getDeployedContract();
+    it("throws error if time limit has expired and not finished successfully", async () => {
+      const currentTime = Date.now();
+      await ethers.provider.send("evm_setNextBlockTimestamp", [currentTime]);
+      const project = await getDeployedProjectContract();
 
-    //   await secondAddress.sendTransaction({
-    //     to: project.address,
-    //     value: ethers.utils.parseEther("1"),
-    //   });
+      await secondAddress.sendTransaction({
+        to: project.address,
+        value: ethers.utils.parseEther("1"),
+      });
 
-    //   await ethers.provider.send("evm_setNextBlockTimestamp", [
-    //     currentTime + 60 * 60 * 24 * 30,
-    //   ]);
+      await ethers.provider.send("evm_setNextBlockTimestamp", [
+        currentTime + 60 * 60 * 24 * 30,
+      ]);
 
-    //   let error;
-    //   try {
-    //     await project.connect(secondAddress).refundCancelledProjectFunds();
-    //   } catch (newError) {
-    //     error = newError;
-    //   }
+      let error;
+      try {
+        await project.connect(secondAddress).refundCancelledProjectFunds();
+      } catch (newError) {
+        error = newError;
+      }
 
-    //   expect(String(error)).to.equal("");
-    // });
+      expect(String(error)).to.equal("");
+    });
   });
 
   describe("withdrawCompletedProjectFunds", () => {
     it("allows owner to withdraw funds and emits Withdraw event", async () => {
-      const project = await getDeployedContract({
+      const project = await getDeployedProjectContract({
         fundraisingGoal: ethers.utils.parseEther("1").toString(),
       });
       await secondAddress.sendTransaction({
@@ -542,7 +568,7 @@ describe("Project", () => {
     });
 
     it("throws error if project is not finished successfully", async () => {
-      const project = await getDeployedContract();
+      const project = await getDeployedProjectContract();
 
       let error;
       try {
@@ -551,13 +577,15 @@ describe("Project", () => {
         error = newError;
       }
 
-      expect(String(error)).to.equal(
-        "Error: VM Exception while processing transaction: reverted with reason string 'Project: project not finished successfully'"
-      );
+      expect(
+        String(error).indexOf(
+          "VM Exception while processing transaction: reverted with reason string 'Project: project not finished successfully'"
+        ) > -1
+      ).to.equal(true);
     });
 
     it("throws error if address is not owner", async () => {
-      const project = await getDeployedContract({
+      const project = await getDeployedProjectContract({
         fundraisingGoal: ethers.utils.parseEther("1").toString(),
       });
       await secondAddress.sendTransaction({
@@ -572,15 +600,17 @@ describe("Project", () => {
         error = newError;
       }
 
-      expect(String(error)).to.equal(
-        "Error: VM Exception while processing transaction: reverted with reason string 'Ownable: caller is not the owner'"
-      );
+      expect(
+        String(error).indexOf(
+          "VM Exception while processing transaction: reverted with reason string 'Ownable: caller is not the owner'"
+        ) > -1
+      ).to.equal(true);
     });
   });
 
   describe("NFTs", () => {
     it("allows contributor with >= 1 eth to mint an NFT badge", async () => {
-      const project = await getDeployedContract();
+      const project = await getDeployedProjectContract();
       await secondAddress.sendTransaction({
         to: project.address,
         value: ethers.utils.parseEther("1"),
@@ -594,7 +624,7 @@ describe("Project", () => {
     });
 
     it("allows address to mint multiple NFTs for each eth contributed", async () => {
-      const project = await getDeployedContract();
+      const project = await getDeployedProjectContract();
       await secondAddress.sendTransaction({
         to: project.address,
         value: ethers.utils.parseEther("1"),
@@ -613,7 +643,7 @@ describe("Project", () => {
     });
 
     it("allows addresses to mint even if project is cancelled", async () => {
-      const project = await getDeployedContract();
+      const project = await getDeployedProjectContract();
       await secondAddress.sendTransaction({
         to: project.address,
         value: ethers.utils.parseEther("2"),
@@ -629,7 +659,7 @@ describe("Project", () => {
     });
 
     it("throws error if no more NFT badges are available to claim", async () => {
-      const project = await getDeployedContract();
+      const project = await getDeployedProjectContract();
       await secondAddress.sendTransaction({
         to: project.address,
         value: ethers.utils.parseEther("1"),
@@ -643,13 +673,15 @@ describe("Project", () => {
         error = newError;
       }
 
-      expect(String(error)).to.equal(
-        "Error: VM Exception while processing transaction: reverted with reason string 'Project: no available NFTs to mint'"
-      );
+      expect(
+        String(error).indexOf(
+          "VM Exception while processing transaction: reverted with reason string 'Project: no available NFTs to mint'"
+        ) > -1
+      ).to.equal(true);
     });
 
     it("throws error if address has not contributed", async () => {
-      const project = await getDeployedContract();
+      const project = await getDeployedProjectContract();
 
       let error;
       try {
@@ -658,9 +690,11 @@ describe("Project", () => {
         error = newError;
       }
 
-      expect(String(error)).to.equal(
-        "Error: VM Exception while processing transaction: reverted with reason string 'Project: no available NFTs to mint'"
-      );
+      expect(
+        String(error).indexOf(
+          "VM Exception while processing transaction: reverted with reason string 'Project: no available NFTs to mint'"
+        ) > -1
+      ).to.equal(true);
     });
   });
 });
