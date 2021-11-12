@@ -106,10 +106,10 @@ contract Project is Ownable, ERC721 {
     isCancelled = true;
   }
 
-  function withdrawUnsuccessfulProjectFunds() external {
+  function refundCancelledProjectFunds() external {
     require(
       isCancelled || (block.timestamp >= projectEndTimeSeconds && !isFinished),
-      "Project: cannot withdraw successful project funds"
+      "Project: cannot refund project funds"
     );
 
     require(
@@ -120,17 +120,16 @@ contract Project is Ownable, ERC721 {
     uint256 addressContributions = addressToContributions[msg.sender];
     addressToContributions[msg.sender] = 0;
     (bool success, ) = msg.sender.call{ value: addressContributions }("");
-    require(success, "Error: Transfer failed");
+    require(success, "Error: refund failed");
     emit Refund(msg.sender, address(this), addressContributions);
   }
 
   function withdrawCompletedProjectFunds() external onlyOwner {
     require(isFinished, "Project: project not finished successfully");
-    require(address(this).balance > 0, "Project: contains no ether");
 
     uint256 contractBalance = address(this).balance;
     (bool success, ) = msg.sender.call{ value: contractBalance }("");
-    require(success, "Project: transfer failed");
+    require(success, "Project: withdraw failed");
     emit Withdraw(msg.sender, address(this), contractBalance);
   }
 

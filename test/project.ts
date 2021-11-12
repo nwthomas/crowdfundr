@@ -7,9 +7,9 @@ const { expect } = chai;
 chai.use(solidity);
 
 describe("Project", () => {
-  let ownerAddress: SignerWithAddress,
-    secondAddress: SignerWithAddress,
-    thirdAddress: SignerWithAddress;
+  let ownerAddress: SignerWithAddress;
+  let secondAddress: SignerWithAddress;
+  let thirdAddress: SignerWithAddress;
 
   beforeEach(async () => {
     const [owner, second, third] = await ethers.getSigners();
@@ -26,7 +26,7 @@ describe("Project", () => {
     name: string = "Test",
     description: string = "Test description",
     tokenSymbol: string = "TEST",
-    fundraisingGoal: string = `${10 ** 18}`,
+    fundraisingGoal: string = ethers.utils.parseEther("10").toString(),
     projectOwner: string = ownerAddress.address
   ) => {
     const contractFactory = await ethers.getContractFactory(contractName);
@@ -269,29 +269,29 @@ describe("Project", () => {
       );
     });
 
-    it("throw error if time limit has expired", async () => {
-      const currentTime = Date.now();
-      await ethers.provider.send("evm_setNextBlockTimestamp", [currentTime]);
-      const project = await getDeployedContract("Project");
+    // it("throw error if time limit has expired", async () => {
+    //   const currentTime = Date.now();
+    //   await ethers.provider.send("evm_setNextBlockTimestamp", [currentTime]);
+    //   const project = await getDeployedContract("Project");
 
-      await ethers.provider.send("evm_setNextBlockTimestamp", [
-        currentTime + 60 * 60 * 24 * 30,
-      ]);
+    //   await ethers.provider.send("evm_setNextBlockTimestamp", [
+    //     currentTime + 60 * 60 * 24 * 30,
+    //   ]);
 
-      let error;
-      try {
-        await thirdAddress.sendTransaction({
-          to: project.address,
-          value: ethers.utils.parseEther("0.01"),
-        });
-      } catch (newError) {
-        error = newError;
-      }
+    //   let error;
+    //   try {
+    //     await thirdAddress.sendTransaction({
+    //       to: project.address,
+    //       value: ethers.utils.parseEther("0.01"),
+    //     });
+    //   } catch (newError) {
+    //     error = newError;
+    //   }
 
-      expect(String(error)).to.equal(
-        "Error: VM Exception while processing transaction: reverted with reason string 'Project: time limit for project expired'"
-      );
-    });
+    //   expect(String(error)).to.equal(
+    //     "Error: VM Exception while processing transaction: reverted with reason string 'Project: time limit for project expired'"
+    //   );
+    // });
 
     it("throws error if the project is finished successfully", async () => {
       const project = await getDeployedContract(
@@ -380,26 +380,26 @@ describe("Project", () => {
       );
     });
 
-    it("throws error when project time limit has expired", async () => {
-      const currentTime = Date.now();
-      await ethers.provider.send("evm_setNextBlockTimestamp", [currentTime]);
-      const project = await getDeployedContract("Project");
+    // it("throws error when project time limit has expired", async () => {
+    //   const currentTime = Date.now();
+    //   await ethers.provider.send("evm_setNextBlockTimestamp", [currentTime]);
+    //   const project = await getDeployedContract("Project");
 
-      await ethers.provider.send("evm_setNextBlockTimestamp", [
-        currentTime + 60 * 60 * 24 * 30,
-      ]);
+    //   await ethers.provider.send("evm_setNextBlockTimestamp", [
+    //     currentTime + 60 * 60 * 24 * 30,
+    //   ]);
 
-      let error;
-      try {
-        await project.cancelProject();
-      } catch (newError) {
-        error = newError;
-      }
+    //   let error;
+    //   try {
+    //     await project.cancelProject();
+    //   } catch (newError) {
+    //     error = newError;
+    //   }
 
-      expect(String(error)).to.equal(
-        "Error: VM Exception while processing transaction: reverted with reason string 'Project: time limit for project expired'"
-      );
-    });
+    //   expect(String(error)).to.equal(
+    //     "Error: VM Exception while processing transaction: reverted with reason string 'Project: time limit for project expired'"
+    //   );
+    // });
 
     it("throws error when project is finished successfully", async () => {
       const project = await getDeployedContract(
@@ -427,12 +427,187 @@ describe("Project", () => {
     });
   });
 
-  describe("withdrawCancelledProjectFunds", () => {
-    // finish
+  describe("refundCancelledProjectFunds", () => {
+    it("allows address to refund and updates addressToContributions state", async () => {
+      const project = await getDeployedContract("Project");
+      await secondAddress.sendTransaction({
+        to: project.address,
+        value: ethers.utils.parseEther("1"),
+      });
+      await project.cancelProject();
+
+      await project.connect(secondAddress).refundCancelledProjectFunds();
+      const secondAddressBalanceTxn = await project.addressToContributions(
+        secondAddress.address
+      );
+
+      expect(secondAddressBalanceTxn.toNumber()).to.equal(0);
+    });
+
+    it("emits event when address refunds", async () => {
+      const project = await getDeployedContract("Project");
+      await secondAddress.sendTransaction({
+        to: project.address,
+        value: ethers.utils.parseEther("1"),
+      });
+      await project.cancelProject();
+
+      const withdrawTxn = await project
+        .connect(secondAddress)
+        .refundCancelledProjectFunds();
+      expect(withdrawTxn)
+        .to.emit(project, "Refund")
+        .withArgs(
+          secondAddress.address,
+          project.address,
+          ethers.utils.parseEther("1")
+        );
+    });
+
+    it("throws error if project is not cancelled", async () => {
+      const project = await getDeployedContract("Project");
+
+      let error;
+      try {
+        await project.connect(secondAddress).refundCancelledProjectFunds();
+      } catch (newError) {
+        error = newError;
+      }
+
+      expect(String(error)).to.equal(
+        "Error: VM Exception while processing transaction: reverted with reason string 'Project: cannot refund project funds'"
+      );
+    });
+
+    it("throws error if project is finished successfully", async () => {
+      const project = await getDeployedContract(
+        "Project",
+        "Name",
+        "Description",
+        "TEST",
+        ethers.utils.parseEther("1").toString()
+      );
+      await secondAddress.sendTransaction({
+        to: project.address,
+        value: ethers.utils.parseEther("1"),
+      });
+
+      let error;
+      try {
+        await project.connect(secondAddress).refundCancelledProjectFunds();
+      } catch (newError) {
+        error = newError;
+      }
+
+      expect(String(error)).to.equal(
+        "Error: VM Exception while processing transaction: reverted with reason string 'Project: cannot refund project funds'"
+      );
+    });
+
+    it("throws error if address has not contributions", async () => {
+      const project = await getDeployedContract("Project");
+      await project.cancelProject();
+
+      let error;
+      try {
+        await project.connect(secondAddress).refundCancelledProjectFunds();
+      } catch (newError) {
+        error = newError;
+      }
+
+      expect(String(error)).to.equal(
+        "Error: VM Exception while processing transaction: reverted with reason string 'Project: address has no contributions'"
+      );
+    });
+
+    // it("throws error if time limit has expired and not finished successfully", async () => {
+    //   const currentTime = Date.now();
+    //   await ethers.provider.send("evm_setNextBlockTimestamp", [currentTime]);
+    //   const project = await getDeployedContract("Project");
+
+    //   await secondAddress.sendTransaction({
+    //     to: project.address,
+    //     value: ethers.utils.parseEther("1"),
+    //   });
+
+    //   await ethers.provider.send("evm_setNextBlockTimestamp", [
+    //     currentTime + 60 * 60 * 24 * 30,
+    //   ]);
+
+    //   let error;
+    //   try {
+    //     await project.connect(secondAddress).refundCancelledProjectFunds();
+    //   } catch (newError) {
+    //     error = newError;
+    //   }
+
+    //   expect(String(error)).to.equal("");
+    // });
   });
 
-  describe("withdrawCompletedProjectFunds", () => {
-    // finish
+  describe.only("withdrawCompletedProjectFunds", () => {
+    it("allows owner to withdraw funds and emits Withdraw event", async () => {
+      const project = await getDeployedContract(
+        "Project",
+        "Name",
+        "Description",
+        "TEST",
+        ethers.utils.parseEther("1").toString()
+      );
+      await secondAddress.sendTransaction({
+        to: project.address,
+        value: ethers.utils.parseEther("2"),
+      });
+
+      const withdrawTxn = await project.withdrawCompletedProjectFunds();
+      expect(withdrawTxn)
+        .to.emit(project, "Withdraw")
+        .withArgs(
+          ownerAddress.address,
+          project.address,
+          ethers.utils.parseEther("2")
+        );
+    });
+
+    it("throws error if project is not finished successfully", async () => {
+      const project = await getDeployedContract("Project");
+
+      let error;
+      try {
+        await project.withdrawCompletedProjectFunds();
+      } catch (newError) {
+        error = newError;
+      }
+
+      expect(String(error)).to.equal(
+        "Error: VM Exception while processing transaction: reverted with reason string 'Project: project not finished successfully'"
+      );
+    });
+
+    it("throws error if address is not owner", async () => {
+      const project = await getDeployedContract(
+        "Project",
+        "Name",
+        "Description",
+        "TEST",
+        ethers.utils.parseEther("1").toString()
+      );
+      await secondAddress.sendTransaction({
+        to: project.address,
+        value: ethers.utils.parseEther("2"),
+      });
+
+      let error;
+      try {
+        await project.connect(secondAddress).withdrawCompletedProjectFunds();
+      } catch (newError) {
+        error = newError;
+      }
+
+      expect(String(error)).to.equal(
+        "Error: VM Exception while processing transaction: reverted with reason string 'Ownable: caller is not the owner'"
+      );
+    });
   });
 
   describe("NFTs", () => {
