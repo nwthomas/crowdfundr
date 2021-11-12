@@ -7,18 +7,16 @@ const { expect } = chai;
 chai.use(solidity);
 
 describe("Project", () => {
-  let ownerAddress: SignerWithAddress;
-  let secondAddress: SignerWithAddress;
-  let thirdAddress: SignerWithAddress;
+  let account1: SignerWithAddress;
+  let account2: SignerWithAddress;
+  let account3: SignerWithAddress;
 
   beforeEach(async () => {
     const [owner, second, third] = await ethers.getSigners();
 
-    ownerAddress = owner;
-    secondAddress = second;
-    thirdAddress = third;
-
-    await ethers.provider.send("evm_revert", ["0x1"]);
+    account1 = owner;
+    account2 = second;
+    account3 = third;
   });
 
   const getDeployedProjectContract = async (args?: {
@@ -36,7 +34,7 @@ describe("Project", () => {
       description || "Test description",
       tokenSymbol || "TEST",
       fundraisingGoal || ethers.utils.parseEther("10").toString(),
-      projectOwner || ownerAddress.address
+      projectOwner || account1.address
     );
 
     return contract;
@@ -67,10 +65,10 @@ describe("Project", () => {
     it("reassigns ownership on deployment using address argument", async () => {
       const project = await getDeployedProjectContract({
         fundraisingGoal: "1000",
-        projectOwner: thirdAddress.address,
+        projectOwner: account3.address,
       });
       const ownershipTxn = await project.owner();
-      expect(ownershipTxn).to.equal(thirdAddress.address);
+      expect(ownershipTxn).to.equal(account3.address);
     });
 
     it("correctly sets end time for project", async () => {
@@ -91,17 +89,17 @@ describe("Project", () => {
     it("instantiates a new contract with owner", async () => {
       const project = await getDeployedProjectContract();
       const owner = await project.owner();
-      expect(owner).to.equal(ownerAddress.address);
+      expect(owner).to.equal(account1.address);
     });
 
     it("transfers ownership", async () => {
       const project = await getDeployedProjectContract();
       const transferOwnershipTxn = await project.transferOwnership(
-        secondAddress.address
+        account2.address
       );
       expect(transferOwnershipTxn)
         .to.emit(project, "OwnershipTransferred")
-        .withArgs(ownerAddress.address, secondAddress.address);
+        .withArgs(account1.address, account2.address);
     });
 
     it("throws error when non-owner attempts transfer", async () => {
@@ -109,9 +107,7 @@ describe("Project", () => {
 
       let error;
       try {
-        await project
-          .connect(secondAddress)
-          .transferOwnership(secondAddress.address);
+        await project.connect(account2).transferOwnership(account2.address);
       } catch (newError) {
         error = newError;
       }
@@ -127,7 +123,7 @@ describe("Project", () => {
       expect(renounceOwnershipTxn)
         .to.emit(project, "OwnershipTransferred")
         .withArgs(
-          ownerAddress.address,
+          account1.address,
           "0x0000000000000000000000000000000000000000"
         );
     });
@@ -137,7 +133,7 @@ describe("Project", () => {
 
       let error;
       try {
-        await project.connect(secondAddress).renounceOwnership();
+        await project.connect(account2).renounceOwnership();
       } catch (newError) {
         error = newError;
       }
@@ -152,13 +148,13 @@ describe("Project", () => {
     it("allows the owner to contribute", async () => {
       const project = await getDeployedProjectContract();
 
-      await ownerAddress.sendTransaction({
+      await account1.sendTransaction({
         to: project.address,
         value: ethers.utils.parseEther("0.01"),
       });
 
       const ownerContributionsTxn = await project.addressToContributions(
-        ownerAddress.address
+        account1.address
       );
       expect(ownerContributionsTxn).to.equal(ethers.utils.parseEther("0.01"));
     });
@@ -166,27 +162,26 @@ describe("Project", () => {
     it("allows multiple addresses to contribute", async () => {
       const project = await getDeployedProjectContract();
 
-      await secondAddress.sendTransaction({
+      await account2.sendTransaction({
         to: project.address,
         value: ethers.utils.parseEther("0.01"),
       });
-      await thirdAddress.sendTransaction({
+      await account3.sendTransaction({
         to: project.address,
         value: ethers.utils.parseEther("1"),
       });
 
-      const secondAddressContributionsTxn =
-        await project.addressToContributions(secondAddress.address);
-      expect(secondAddressContributionsTxn).to.equal(
+      const account2ContributionsTxn = await project.addressToContributions(
+        account2.address
+      );
+      expect(account2ContributionsTxn).to.equal(
         ethers.utils.parseEther("0.01")
       );
 
-      const thirdAddressContributionsTxn = await project.addressToContributions(
-        thirdAddress.address
+      const account3ContributionsTxn = await project.addressToContributions(
+        account3.address
       );
-      expect(thirdAddressContributionsTxn).to.equal(
-        ethers.utils.parseEther("1")
-      );
+      expect(account3ContributionsTxn).to.equal(ethers.utils.parseEther("1"));
     });
 
     it("allows the same address to contribute multiple times", async () => {
@@ -195,25 +190,23 @@ describe("Project", () => {
       });
 
       for (let i = 0; i < 10; i++) {
-        await ownerAddress.sendTransaction({
+        await account1.sendTransaction({
           to: project.address,
           value: ethers.utils.parseEther("0.1"),
         });
       }
 
-      const ownerAddressContributionsTxn = await project.addressToContributions(
-        ownerAddress.address
+      const account1ContributionsTxn = await project.addressToContributions(
+        account1.address
       );
-      expect(ownerAddressContributionsTxn).to.equal(
-        ethers.utils.parseEther("1")
-      );
+      expect(account1ContributionsTxn).to.equal(ethers.utils.parseEther("1"));
     });
 
     it("sets the isFinished boolean to true when balance >= fundraising goal", async () => {
       const project = await getDeployedProjectContract({
         fundraisingGoal: ethers.utils.parseEther("0.01").toString(),
       });
-      await thirdAddress.sendTransaction({
+      await account3.sendTransaction({
         to: project.address,
         value: ethers.utils.parseEther("1"),
       });
@@ -225,14 +218,14 @@ describe("Project", () => {
     it("emits a Contribution event", async () => {
       const project = await getDeployedProjectContract();
 
-      const contributionTxn = await secondAddress.sendTransaction({
+      const contributionTxn = await account2.sendTransaction({
         to: project.address,
         value: ethers.utils.parseEther("0.01"),
       });
       expect(contributionTxn)
         .to.emit(project, "Contribution")
         .withArgs(
-          secondAddress.address,
+          account2.address,
           project.address,
           ethers.utils.parseEther("0.01")
         );
@@ -244,7 +237,7 @@ describe("Project", () => {
 
       let error;
       try {
-        await thirdAddress.sendTransaction({
+        await account3.sendTransaction({
           to: project.address,
           value: ethers.utils.parseEther("0.01"),
         });
@@ -268,7 +261,7 @@ describe("Project", () => {
 
       let error;
       try {
-        await thirdAddress.sendTransaction({
+        await account3.sendTransaction({
           to: project.address,
           value: ethers.utils.parseEther("0.01"),
         });
@@ -285,14 +278,14 @@ describe("Project", () => {
       const project = await getDeployedProjectContract({
         fundraisingGoal: ethers.utils.parseEther("0.01").toString(),
       });
-      await ownerAddress.sendTransaction({
+      await account1.sendTransaction({
         to: project.address,
         value: ethers.utils.parseEther("0.01"),
       });
 
       let error;
       try {
-        await ownerAddress.sendTransaction({
+        await account1.sendTransaction({
           to: project.address,
           value: ethers.utils.parseEther("0.01"),
         });
@@ -310,7 +303,7 @@ describe("Project", () => {
 
       let error;
       try {
-        await ownerAddress.sendTransaction({
+        await account1.sendTransaction({
           to: project.address,
           value: ethers.utils.parseEther("0.0001"),
         });
@@ -339,7 +332,7 @@ describe("Project", () => {
 
       let error;
       try {
-        await project.connect(secondAddress).cancelProject();
+        await project.connect(account2).cancelProject();
       } catch (newError) {
         error = newError;
       }
@@ -387,7 +380,7 @@ describe("Project", () => {
       const project = await getDeployedProjectContract({
         fundraisingGoal: ethers.utils.parseEther("0.01").toString(),
       });
-      await ownerAddress.sendTransaction({
+      await account1.sendTransaction({
         to: project.address,
         value: ethers.utils.parseEther("1"),
       });
@@ -408,24 +401,24 @@ describe("Project", () => {
   describe("refundCancelledProjectFunds", () => {
     it("allows address to refund and updates addressToContributions state", async () => {
       const project = await getDeployedProjectContract();
-      await secondAddress.sendTransaction({
+      await account2.sendTransaction({
         to: project.address,
         value: ethers.utils.parseEther("1"),
       });
       await project.cancelProject();
 
-      await project.connect(secondAddress).refundCancelledProjectFunds();
-      const secondAddressBalanceTxn = await project.addressToContributions(
-        secondAddress.address
+      await project.connect(account2).refundCancelledProjectFunds();
+      const account2BalanceTxn = await project.addressToContributions(
+        account2.address
       );
 
-      expect(secondAddressBalanceTxn.toNumber()).to.equal(0);
+      expect(account2BalanceTxn.toNumber()).to.equal(0);
     });
 
     it("allows address to refund if time limit has expired and not finished successfully", async () => {
       const project = await getDeployedProjectContract();
 
-      await secondAddress.sendTransaction({
+      await account2.sendTransaction({
         to: project.address,
         value: ethers.utils.parseEther("1"),
       });
@@ -433,29 +426,29 @@ describe("Project", () => {
       await ethers.provider.send("evm_increaseTime", [60 * 60 * 24 * 30]);
       await ethers.provider.send("evm_mine", []);
 
-      await project.connect(secondAddress).refundCancelledProjectFunds();
-      const secondAddressBalanceTxn = await project.addressToContributions(
-        secondAddress.address
+      await project.connect(account2).refundCancelledProjectFunds();
+      const account2BalanceTxn = await project.addressToContributions(
+        account2.address
       );
 
-      expect(secondAddressBalanceTxn.toNumber()).to.equal(0);
+      expect(account2BalanceTxn.toNumber()).to.equal(0);
     });
 
     it("emits event when address refunds", async () => {
       const project = await getDeployedProjectContract();
-      await secondAddress.sendTransaction({
+      await account2.sendTransaction({
         to: project.address,
         value: ethers.utils.parseEther("1"),
       });
       await project.cancelProject();
 
       const withdrawTxn = await project
-        .connect(secondAddress)
+        .connect(account2)
         .refundCancelledProjectFunds();
       expect(withdrawTxn)
         .to.emit(project, "Refund")
         .withArgs(
-          secondAddress.address,
+          account2.address,
           project.address,
           ethers.utils.parseEther("1")
         );
@@ -466,7 +459,7 @@ describe("Project", () => {
 
       let error;
       try {
-        await project.connect(secondAddress).refundCancelledProjectFunds();
+        await project.connect(account2).refundCancelledProjectFunds();
       } catch (newError) {
         error = newError;
       }
@@ -480,14 +473,14 @@ describe("Project", () => {
       const project = await getDeployedProjectContract({
         fundraisingGoal: ethers.utils.parseEther("1").toString(),
       });
-      await secondAddress.sendTransaction({
+      await account2.sendTransaction({
         to: project.address,
         value: ethers.utils.parseEther("1"),
       });
 
       let error;
       try {
-        await project.connect(secondAddress).refundCancelledProjectFunds();
+        await project.connect(account2).refundCancelledProjectFunds();
       } catch (newError) {
         error = newError;
       }
@@ -501,7 +494,7 @@ describe("Project", () => {
       const project = await getDeployedProjectContract({
         fundraisingGoal: ethers.utils.parseEther("1").toString(),
       });
-      await secondAddress.sendTransaction({
+      await account2.sendTransaction({
         to: project.address,
         value: ethers.utils.parseEther("1"),
       });
@@ -511,7 +504,7 @@ describe("Project", () => {
 
       let error;
       try {
-        await project.connect(secondAddress).refundCancelledProjectFunds();
+        await project.connect(account2).refundCancelledProjectFunds();
       } catch (newError) {
         error = newError;
       }
@@ -527,7 +520,7 @@ describe("Project", () => {
 
       let error;
       try {
-        await project.connect(secondAddress).refundCancelledProjectFunds();
+        await project.connect(account2).refundCancelledProjectFunds();
       } catch (newError) {
         error = newError;
       }
@@ -543,7 +536,7 @@ describe("Project", () => {
       const project = await getDeployedProjectContract({
         fundraisingGoal: ethers.utils.parseEther("1").toString(),
       });
-      await secondAddress.sendTransaction({
+      await account2.sendTransaction({
         to: project.address,
         value: ethers.utils.parseEther("2"),
       });
@@ -552,7 +545,7 @@ describe("Project", () => {
       expect(withdrawTxn)
         .to.emit(project, "Withdraw")
         .withArgs(
-          ownerAddress.address,
+          account1.address,
           project.address,
           ethers.utils.parseEther("2")
         );
@@ -577,14 +570,14 @@ describe("Project", () => {
       const project = await getDeployedProjectContract({
         fundraisingGoal: ethers.utils.parseEther("1").toString(),
       });
-      await secondAddress.sendTransaction({
+      await account2.sendTransaction({
         to: project.address,
         value: ethers.utils.parseEther("2"),
       });
 
       let error;
       try {
-        await project.connect(secondAddress).withdrawCompletedProjectFunds();
+        await project.connect(account2).withdrawCompletedProjectFunds();
       } catch (newError) {
         error = newError;
       }
@@ -598,64 +591,58 @@ describe("Project", () => {
   describe("NFTs", () => {
     it("allows contributor with >= 1 eth to mint an NFT badge", async () => {
       const project = await getDeployedProjectContract();
-      await secondAddress.sendTransaction({
+      await account2.sendTransaction({
         to: project.address,
         value: ethers.utils.parseEther("1"),
       });
 
-      await project.connect(secondAddress).mintNFT();
-      const secondAddressNFTBalance = await project.balanceOf(
-        secondAddress.address
-      );
-      expect(secondAddressNFTBalance).to.equal(1);
+      await project.connect(account2).mintNFT();
+      const account2NFTBalance = await project.balanceOf(account2.address);
+      expect(account2NFTBalance).to.equal(1);
     });
 
     it("allows address to mint multiple NFTs for each eth contributed", async () => {
       const project = await getDeployedProjectContract();
-      await secondAddress.sendTransaction({
+      await account2.sendTransaction({
         to: project.address,
         value: ethers.utils.parseEther("1"),
       });
-      await secondAddress.sendTransaction({
+      await account2.sendTransaction({
         to: project.address,
         value: ethers.utils.parseEther("2"),
       });
 
-      await project.connect(secondAddress).mintNFT();
-      await project.connect(secondAddress).mintNFT();
-      const secondAddressNFTBalance = await project.balanceOf(
-        secondAddress.address
-      );
-      expect(secondAddressNFTBalance).to.equal(2);
+      await project.connect(account2).mintNFT();
+      await project.connect(account2).mintNFT();
+      const account2NFTBalance = await project.balanceOf(account2.address);
+      expect(account2NFTBalance).to.equal(2);
     });
 
     it("allows addresses to mint even if project is cancelled", async () => {
       const project = await getDeployedProjectContract();
-      await secondAddress.sendTransaction({
+      await account2.sendTransaction({
         to: project.address,
         value: ethers.utils.parseEther("2"),
       });
 
       await project.cancelProject();
-      await project.connect(secondAddress).mintNFT();
+      await project.connect(account2).mintNFT();
 
-      const secondAddressNFTBalance = await project.balanceOf(
-        secondAddress.address
-      );
-      expect(secondAddressNFTBalance).to.equal(1);
+      const account2NFTBalance = await project.balanceOf(account2.address);
+      expect(account2NFTBalance).to.equal(1);
     });
 
     it("throws error if no more NFT badges are available to claim", async () => {
       const project = await getDeployedProjectContract();
-      await secondAddress.sendTransaction({
+      await account2.sendTransaction({
         to: project.address,
         value: ethers.utils.parseEther("1"),
       });
-      await project.connect(secondAddress).mintNFT();
+      await project.connect(account2).mintNFT();
 
       let error;
       try {
-        await project.connect(secondAddress).mintNFT();
+        await project.connect(account2).mintNFT();
       } catch (newError) {
         error = newError;
       }
@@ -670,7 +657,7 @@ describe("Project", () => {
 
       let error;
       try {
-        await project.connect(secondAddress).mintNFT();
+        await project.connect(account2).mintNFT();
       } catch (newError) {
         error = newError;
       }

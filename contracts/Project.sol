@@ -5,6 +5,9 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
+/// @title A contract for holding a fundraising project
+/// @author Nathan Thomas
+/// @notice This contract is not audited - use at your own risk
 contract Project is Ownable, ERC721 {
   using Counters for Counters.Counter;
   Counters.Counter private tokenIds;
@@ -62,6 +65,16 @@ contract Project is Ownable, ERC721 {
     _;
   }
 
+  /// @notice Instantiates a new fundraising project and instantly transfers ownership
+  /// to the _projectOwner address provided
+  /// @param _name The name of the fundraising project to be used in the NFT badges
+  /// given to contributors of >= 1 ether
+  /// @param _description The description of the fundraising project
+  /// @param _tokenSymbol The NFT token symbol
+  /// @param _fundraisingGoal The total ether goal of the new fundraising project
+  /// @param _projectOwner The true owner of the project (and which instantly gains
+  /// ownership on completion of instantiating the contract)
+  /// @dev The project expiration time will always be 30 days from creation
   constructor(
     string memory _name,
     string memory _description,
@@ -75,6 +88,10 @@ contract Project is Ownable, ERC721 {
     projectEndTimeSeconds = block.timestamp + PROJECT_TIME_LENGTH_SECONDS;
   }
 
+  /// @notice Allows any address to contribute to the contract if the project has not
+  /// been cancelled, is not expired, and has not already been finished successfully
+  /// @dev If an address' contributions put the contract over the fundraising limit,
+  /// it's a valid contribution but the fundraising project is finished immediately
   receive()
     external
     payable
@@ -95,6 +112,8 @@ contract Project is Ownable, ERC721 {
     emit Contribution(msg.sender, address(this), msg.value);
   }
 
+  /// @notice Allows the owner of the project to cancel it if the project has not
+  /// been cancelled, is not expired, and has not already been finished successfully
   function cancelProject()
     external
     onlyOwner
@@ -105,6 +124,8 @@ contract Project is Ownable, ERC721 {
     isCancelled = true;
   }
 
+  /// @notice Refunds an address' ether if the project is either cancelled or has
+  /// expired without finishing successfully
   function refundCancelledProjectFunds() external {
     require(
       isCancelled || (block.timestamp >= projectEndTimeSeconds && !isFinished),
@@ -123,6 +144,8 @@ contract Project is Ownable, ERC721 {
     emit Refund(msg.sender, address(this), addressContributions);
   }
 
+  /// @notice Allows the owner of the contract to withdraw a successfully completed
+  /// fundraising project's ether
   function withdrawCompletedProjectFunds() external onlyOwner {
     require(isFinished, "Project: project not finished successfully");
 
@@ -132,6 +155,10 @@ contract Project is Ownable, ERC721 {
     emit Withdraw(msg.sender, address(this), contractBalance);
   }
 
+  /// @notice Allows the lazy minting of NFT badges for all contributors for the
+  /// fundraising project
+  /// @dev Once a token has been minted here, the NFT will respect all ERC721 API
+  /// spec requirements
   function mintNFT() external hasMintableNFTs {
     uint256 newTokenId = tokenIds.current();
     _safeMint(msg.sender, newTokenId);

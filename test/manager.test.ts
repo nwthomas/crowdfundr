@@ -7,16 +7,16 @@ const { expect } = chai;
 chai.use(solidity);
 
 describe("Manager", () => {
-  let ownerAddress: SignerWithAddress,
-    secondAddress: SignerWithAddress,
-    thirdAddress: SignerWithAddress;
+  let account1: SignerWithAddress;
+  let account2: SignerWithAddress;
+  let account3: SignerWithAddress;
 
   beforeEach(async () => {
     const [owner, second, third] = await ethers.getSigners();
 
-    ownerAddress = owner;
-    secondAddress = second;
-    thirdAddress = third;
+    account1 = owner;
+    account2 = second;
+    account3 = third;
   });
 
   const getDeployedManagerContract = async () => {
@@ -41,7 +41,7 @@ describe("Manager", () => {
       description || "Test description",
       tokenSymbol || "TEST",
       fundraisingGoal || ethers.utils.parseEther("10").toString(),
-      projectOwner || ownerAddress.address
+      projectOwner || account1.address
     );
 
     return contract;
@@ -60,17 +60,17 @@ describe("Manager", () => {
     it("instantiates a new contract with owner", async () => {
       const manager = await getDeployedManagerContract();
       const owner = await manager.owner();
-      expect(owner).to.equal(ownerAddress.address);
+      expect(owner).to.equal(account1.address);
     });
 
     it("transfers ownership", async () => {
       const manager = await getDeployedManagerContract();
       const transferOwnershipTxn = await manager.transferOwnership(
-        secondAddress.address
+        account2.address
       );
       expect(transferOwnershipTxn)
         .to.emit(manager, "OwnershipTransferred")
-        .withArgs(ownerAddress.address, secondAddress.address);
+        .withArgs(account1.address, account2.address);
     });
 
     it("throws error when non-owner attempts transfer", async () => {
@@ -78,9 +78,7 @@ describe("Manager", () => {
 
       let error;
       try {
-        await manager
-          .connect(secondAddress)
-          .transferOwnership(secondAddress.address);
+        await manager.connect(account2).transferOwnership(account2.address);
       } catch (newError) {
         error = newError;
       }
@@ -97,7 +95,7 @@ describe("Manager", () => {
       expect(renounceOwnershipTxn)
         .to.emit(manager, "OwnershipTransferred")
         .withArgs(
-          ownerAddress.address,
+          account1.address,
           "0x0000000000000000000000000000000000000000"
         );
     });
@@ -107,7 +105,7 @@ describe("Manager", () => {
 
       let error;
       try {
-        await manager.connect(secondAddress).renounceOwnership();
+        await manager.connect(account2).renounceOwnership();
       } catch (newError) {
         error = newError;
       }
@@ -131,7 +129,7 @@ describe("Manager", () => {
       expect(newProjectTxn)
         .to.emit(manager, "ProjectCreated")
         .withArgs(
-          ownerAddress.address,
+          account1.address,
           "0x94099942864EA81cCF197E9D71ac53310b1468D8",
           0
         );
@@ -140,7 +138,7 @@ describe("Manager", () => {
     it("allows any address to create a new project", async () => {
       const manager = await getDeployedManagerContract();
       const newProjectTxn = await manager
-        .connect(thirdAddress)
+        .connect(account3)
         .createNewProject(
           "Test Name",
           "Test description",
@@ -150,7 +148,7 @@ describe("Manager", () => {
       expect(newProjectTxn)
         .to.emit(manager, "ProjectCreated")
         .withArgs(
-          thirdAddress.address,
+          account3.address,
           "0x6F1216D1BFe15c98520CA1434FC1d9D57AC95321",
           0
         );
@@ -159,7 +157,7 @@ describe("Manager", () => {
     it("tracks new projects in array", async () => {
       const manager = await getDeployedManagerContract();
       await manager
-        .connect(secondAddress)
+        .connect(account2)
         .createNewProject(
           "Test Name 1",
           "Test description 1",
@@ -167,7 +165,7 @@ describe("Manager", () => {
           ethers.utils.parseEther("10")
         );
       await manager
-        .connect(thirdAddress)
+        .connect(account3)
         .createNewProject(
           "Test Name 2",
           "Test description 2",
@@ -193,30 +191,30 @@ describe("Manager", () => {
         ethers.utils.parseEther("10")
       );
       await manager
-        .connect(thirdAddress)
+        .connect(account3)
         .createNewProject(
           "Test Name 2",
           "Test description 2",
           "TST2",
           ethers.utils.parseEther("10")
         );
-      const ownerAddressProjectIndex = await manager.ownerToProjects(
-        ownerAddress.address,
+      const account1ProjectIndex = await manager.ownerToProjects(
+        account1.address,
         0
       );
-      const thirdAddressProjectIndex = await manager.ownerToProjects(
-        thirdAddress.address,
+      const account3ProjectIndex = await manager.ownerToProjects(
+        account3.address,
         0
       );
-      expect(ownerAddressProjectIndex.toNumber()).to.equal(0);
-      expect(thirdAddressProjectIndex.toNumber()).to.equal(1);
+      expect(account1ProjectIndex.toNumber()).to.equal(0);
+      expect(account3ProjectIndex.toNumber()).to.equal(1);
     });
 
     it("deploys child projects with msg.sender as owner", async () => {
       let project = await getDeployedProjectContract();
       const manager = await getDeployedManagerContract();
       await manager
-        .connect(secondAddress)
+        .connect(account2)
         .createNewProject(
           "Test Name 1",
           "Test description 1",
@@ -228,7 +226,7 @@ describe("Manager", () => {
       project = await project.attach(projectAddressTxn);
 
       const projectOwnerTxn = await project.owner();
-      expect(projectOwnerTxn).to.equal(secondAddress.address);
+      expect(projectOwnerTxn).to.equal(account2.address);
     });
   });
 });

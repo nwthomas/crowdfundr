@@ -4,6 +4,9 @@ pragma solidity ^0.8.4;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./Project.sol";
 
+/// @title A contract for managing the creation of new fundraising projects
+/// @author Nathan Thomas
+/// @notice This contract is not audited - use at your own risk
 contract Manager is Ownable {
   Project[] public projects;
   mapping(address => uint256[]) public ownerToProjects;
@@ -14,6 +17,12 @@ contract Manager is Ownable {
     uint256 indexed projectIndex
   );
 
+  /// @notice Creates a new fundraising project with ownership of the msg.sender
+  /// @param _name The name of the new fundraising project
+  /// @param _description The description of the new fundraising project
+  /// @param _fundraisingGoal The total ether goal of the new fundraising project
+  /// @dev The event or the tracking variables can be used to get the new project
+  /// address when it's created
   function createNewProject(
     string calldata _name,
     string calldata _description,
