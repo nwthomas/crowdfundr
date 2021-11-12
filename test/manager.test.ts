@@ -87,9 +87,7 @@ describe("Manager", () => {
 
       expect(error instanceof Error).to.equal(true);
       expect(
-        String(error).indexOf(
-          "VM Exception while processing transaction: reverted with reason string 'Ownable: caller is not the owner'"
-        ) > -1
+        String(error).indexOf("Ownable: caller is not the owner") > -1
       ).to.equal(true);
     });
 
@@ -116,9 +114,7 @@ describe("Manager", () => {
 
       expect(error instanceof Error).to.equal(true);
       expect(
-        String(error).indexOf(
-          "VM Exception while processing transaction: reverted with reason string 'Ownable: caller is not the owner'"
-        ) > -1
+        String(error).indexOf("Ownable: caller is not the owner") > -1
       ).to.equal(true);
     });
   });

@@ -40,4 +40,16 @@ Upon further examination, the following specifications were also revealed:
 
 ## DESIGN EXERCISES
 
-TODO
+The question is:
+
+```
+Smart contracts have a hard limit of 24kb. Crowdfundr hands out an NFT to everyone who contributes. However, consider how Kickstarter has multiple contribution tiers. How would you design your contract to support this, without creating three separate NFT contracts?
+```
+
+Answer:
+
+```
+If we were to design around various contributions tiers and the associated NFTs that we'd need to store, one possibility around the 24kb limit for contracts could be to store a seperate value in the NFT metadata indicating which contribution tier the NFT was granted for.
+
+We could then include a tokenURI function that would conditionally render certain attributes about the NFT depending on the metadata value. This would allow us to get around needing to have separate NFT contracts.
+```

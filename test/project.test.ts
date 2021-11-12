@@ -117,9 +117,7 @@ describe("Project", () => {
       }
 
       expect(
-        String(error).indexOf(
-          "VM Exception while processing transaction: reverted with reason string 'Ownable: caller is not the owner'"
-        ) > -1
+        String(error).indexOf("Ownable: caller is not the owner") > -1
       ).to.equal(true);
     });
 
@@ -145,9 +143,7 @@ describe("Project", () => {
       }
 
       expect(
-        String(error).indexOf(
-          "VM Exception while processing transaction: reverted with reason string 'Ownable: caller is not the owner'"
-        ) > -1
+        String(error).indexOf("Ownable: caller is not the owner") > -1
       ).to.equal(true);
     });
   });
@@ -257,9 +253,7 @@ describe("Project", () => {
       }
 
       expect(
-        String(error).indexOf(
-          "VM Exception while processing transaction: reverted with reason string 'Project: project is cancelled'"
-        ) > -1
+        String(error).indexOf("Project: project is cancelled") > -1
       ).to.equal(true);
     });
 
@@ -283,9 +277,7 @@ describe("Project", () => {
       }
 
       expect(
-        String(error).indexOf(
-          "VM Exception while processing transaction: reverted with reason string 'Project: time limit for project expired'"
-        ) > -1
+        String(error).indexOf("Project: time limit for project expired") > -1
       ).to.equal(true);
     });
 
@@ -309,9 +301,7 @@ describe("Project", () => {
       }
 
       expect(
-        String(error).indexOf(
-          "VM Exception while processing transaction: reverted with reason string 'Project: project has finished'"
-        ) > -1
+        String(error).indexOf("Project: project has finished") > -1
       ).to.equal(true);
     });
 
@@ -329,9 +319,8 @@ describe("Project", () => {
       }
 
       expect(
-        String(error).indexOf(
-          "VM Exception while processing transaction: reverted with reason string 'Project: contribution must be >= 0.01 ether'"
-        ) > -1
+        String(error).indexOf("Project: contribution must be >= 0.01 ether") >
+          -1
       ).to.equal(true);
     });
   });
@@ -356,9 +345,7 @@ describe("Project", () => {
       }
 
       expect(
-        String(error).indexOf(
-          "VM Exception while processing transaction: reverted with reason string 'Ownable: caller is not the owner'"
-        ) > -1
+        String(error).indexOf("Ownable: caller is not the owner") > -1
       ).to.equal(true);
     });
 
@@ -374,9 +361,7 @@ describe("Project", () => {
       }
 
       expect(
-        String(error).indexOf(
-          "VM Exception while processing transaction: reverted with reason string 'Project: project is cancelled'"
-        ) > -1
+        String(error).indexOf("Project: project is cancelled") > -1
       ).to.equal(true);
     });
 
@@ -397,9 +382,7 @@ describe("Project", () => {
       }
 
       expect(
-        String(error).indexOf(
-          "VM Exception while processing transaction: reverted with reason string 'Project: time limit for project expired'"
-        ) > -1
+        String(error).indexOf("Project: time limit for project expired") > -1
       ).to.equal(true);
     });
 
@@ -420,9 +403,7 @@ describe("Project", () => {
       }
 
       expect(
-        String(error).indexOf(
-          "VM Exception while processing transaction: reverted with reason string 'Project: project has finished'"
-        ) > -1
+        String(error).indexOf("Project: project has finished") > -1
       ).to.equal(true);
     });
   });
@@ -475,9 +456,7 @@ describe("Project", () => {
       }
 
       expect(
-        String(error).indexOf(
-          "VM Exception while processing transaction: reverted with reason string 'Project: cannot refund project funds'"
-        ) > -1
+        String(error).indexOf("Project: cannot refund project funds") > -1
       ).to.equal(true);
     });
 
@@ -498,9 +477,7 @@ describe("Project", () => {
       }
 
       expect(
-        String(error).indexOf(
-          "VM Exception while processing transaction: reverted with reason string 'Project: cannot refund project funds'"
-        ) > -1
+        String(error).indexOf("Project: cannot refund project funds") > -1
       ).to.equal(true);
     });
 
@@ -516,9 +493,7 @@ describe("Project", () => {
       }
 
       expect(
-        String(error).indexOf(
-          "VM Exception while processing transaction: reverted with reason string 'Project: address has no contributions'"
-        ) > -1
+        String(error).indexOf("Project: address has no contributions") > -1
       ).to.equal(true);
     });
 
@@ -578,9 +553,7 @@ describe("Project", () => {
       }
 
       expect(
-        String(error).indexOf(
-          "VM Exception while processing transaction: reverted with reason string 'Project: project not finished successfully'"
-        ) > -1
+        String(error).indexOf("Project: project not finished successfully") > -1
       ).to.equal(true);
     });
 
@@ -601,9 +574,7 @@ describe("Project", () => {
       }
 
       expect(
-        String(error).indexOf(
-          "VM Exception while processing transaction: reverted with reason string 'Ownable: caller is not the owner'"
-        ) > -1
+        String(error).indexOf("Ownable: caller is not the owner") > -1
       ).to.equal(true);
     });
   });
@@ -674,9 +645,7 @@ describe("Project", () => {
       }
 
       expect(
-        String(error).indexOf(
-          "VM Exception while processing transaction: reverted with reason string 'Project: no available NFTs to mint'"
-        ) > -1
+        String(error).indexOf("Project: no available NFTs to mint") > -1
       ).to.equal(true);
     });
 
@@ -691,9 +660,7 @@ describe("Project", () => {
       }
 
       expect(
-        String(error).indexOf(
-          "VM Exception while processing transaction: reverted with reason string 'Project: no available NFTs to mint'"
-        ) > -1
+        String(error).indexOf("Project: no available NFTs to mint") > -1
       ).to.equal(true);
     });
   });
