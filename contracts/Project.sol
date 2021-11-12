@@ -25,12 +25,12 @@ contract Project is Ownable, ERC721 {
     address indexed project,
     uint256 indexed amount
   );
-  event Refunded(
+  event Refund(
     address indexed to,
     address indexed project,
     uint256 indexed amount
   );
-  event Withdrawn(
+  event Withdraw(
     address indexed to,
     address indexed project,
     uint256 indexed amount
@@ -69,9 +69,8 @@ contract Project is Ownable, ERC721 {
     string memory _tokenSymbol,
     uint256 _fundraisingGoal,
     address _projectOwner
-  ) payable ERC721(_name, _tokenSymbol) {
+  ) ERC721(_name, _tokenSymbol) {
     transferOwnership(_projectOwner);
-
     description = _description;
     fundraisingGoal = _fundraisingGoal;
     projectEndTimeSeconds = block.timestamp + PROJECT_TIME_LENGTH_SECONDS;
@@ -122,7 +121,7 @@ contract Project is Ownable, ERC721 {
     addressToContributions[msg.sender] = 0;
     (bool success, ) = msg.sender.call{ value: addressContributions }("");
     require(success, "Error: Transfer failed");
-    emit Refunded(msg.sender, address(this), addressContributions);
+    emit Refund(msg.sender, address(this), addressContributions);
   }
 
   function withdrawCompletedProjectFunds() external onlyOwner {
@@ -132,7 +131,7 @@ contract Project is Ownable, ERC721 {
     uint256 contractBalance = address(this).balance;
     (bool success, ) = msg.sender.call{ value: contractBalance }("");
     require(success, "Project: transfer failed");
-    emit Withdrawn(msg.sender, address(this), contractBalance);
+    emit Withdraw(msg.sender, address(this), contractBalance);
   }
 
   function mintNFT() external hasMintableNFTs returns (uint256) {

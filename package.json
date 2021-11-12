@@ -71,7 +71,7 @@
     "prettier:check": "prettier --check --config ./.prettierrc.yaml \"**/*.{js,json,md,sol,ts}\"",
     "start": "npx hardhat run scripts/run.ts",
     "server": "npx hardhat node",
-    "test": "nodemon -x 'npx hardhat test' -w contracts -w test -e js,ts,sol",
+    "test": "nodemon -x 'npx hardhat test' -w contracts -w test -e ts,sol",
     "typechain": "cross-env TS_NODE_TRANSPILE_ONLY=true hardhat typechain"
   }
 }
