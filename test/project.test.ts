@@ -23,19 +23,23 @@ describe("Project", () => {
 
   const getDeployedContract = async (
     contractName: string,
-    name: string = "Test",
-    description: string = "Test description",
-    tokenSymbol: string = "TEST",
-    fundraisingGoal: string = ethers.utils.parseEther("10").toString(),
-    projectOwner: string = ownerAddress.address
+    args?: {
+      name?: string;
+      description?: string;
+      tokenSymbol?: string;
+      fundraisingGoal?: string;
+      projectOwner?: string;
+    }
   ) => {
+    const { name, description, tokenSymbol, fundraisingGoal, projectOwner } =
+      args || {};
     const contractFactory = await ethers.getContractFactory(contractName);
     const contract = await contractFactory.deploy(
-      name,
-      description,
-      tokenSymbol,
-      fundraisingGoal,
-      projectOwner
+      name || "Test Name",
+      description || "Test description",
+      tokenSymbol || "TEST",
+      fundraisingGoal || ethers.utils.parseEther("10").toString(),
+      projectOwner || ownerAddress.address
     );
 
     return contract;
@@ -43,36 +47,31 @@ describe("Project", () => {
 
   describe("deploy", () => {
     it("assigns state variables for project on deploy", async () => {
-      const project = await getDeployedContract(
-        "Project",
-        "Name",
-        "Description",
-        "Symbol",
-        "1"
-      );
+      const project = await getDeployedContract("Project", {
+        name: "This is a name",
+        description: "This is a description",
+        tokenSymbol: "This is a symbol",
+        fundraisingGoal: "10101",
+      });
 
       const nameTxn = await project.name();
-      expect(nameTxn).to.equal("Name");
+      expect(nameTxn).to.equal("This is a name");
 
       const descriptionTxn = await project.description();
-      expect(descriptionTxn).to.equal("Description");
+      expect(descriptionTxn).to.equal("This is a description");
 
       const symbolTxn = await project.symbol();
-      expect(symbolTxn).to.equal("Symbol");
+      expect(symbolTxn).to.equal("This is a symbol");
 
       const fundraisingGoal = await project.fundraisingGoal();
-      expect(fundraisingGoal).to.equal(1);
+      expect(fundraisingGoal).to.equal(10101);
     });
 
     it("reassigns ownership on deployment using address argument", async () => {
-      const project = await getDeployedContract(
-        "Project",
-        "Test",
-        "Test description",
-        "TEST",
-        "1000",
-        thirdAddress.address
-      );
+      const project = await getDeployedContract("Project", {
+        fundraisingGoal: "1000",
+        projectOwner: thirdAddress.address,
+      });
       const ownershipTxn = await project.owner();
       expect(ownershipTxn).to.equal(thirdAddress.address);
     });
@@ -194,13 +193,9 @@ describe("Project", () => {
     });
 
     it("allows the same address to contribute multiple times", async () => {
-      const project = await getDeployedContract(
-        "Project",
-        "Name",
-        "Description",
-        "TEST",
-        ethers.utils.parseEther("10").toString()
-      );
+      const project = await getDeployedContract("Project", {
+        fundraisingGoal: ethers.utils.parseEther("10").toString(),
+      });
 
       for (let i = 0; i < 10; i++) {
         await ownerAddress.sendTransaction({
@@ -218,13 +213,9 @@ describe("Project", () => {
     });
 
     it("sets the isFinished boolean to true when balance >= fundraising goal", async () => {
-      const project = await getDeployedContract(
-        "Project",
-        "Name",
-        "Description",
-        "TEST",
-        ethers.utils.parseEther("0.01").toString()
-      );
+      const project = await getDeployedContract("Project", {
+        fundraisingGoal: ethers.utils.parseEther("0.01").toString(),
+      });
       await thirdAddress.sendTransaction({
         to: project.address,
         value: ethers.utils.parseEther("1"),
@@ -294,13 +285,9 @@ describe("Project", () => {
     // });
 
     it("throws error if the project is finished successfully", async () => {
-      const project = await getDeployedContract(
-        "Project",
-        "Name",
-        "Description",
-        "TEST",
-        ethers.utils.parseEther("0.01").toString()
-      );
+      const project = await getDeployedContract("Project", {
+        fundraisingGoal: ethers.utils.parseEther("0.01").toString(),
+      });
       await ownerAddress.sendTransaction({
         to: project.address,
         value: ethers.utils.parseEther("0.01"),
@@ -402,13 +389,9 @@ describe("Project", () => {
     // });
 
     it("throws error when project is finished successfully", async () => {
-      const project = await getDeployedContract(
-        "Project",
-        "Name",
-        "Description",
-        "TEST",
-        ethers.utils.parseEther("0.01").toString()
-      );
+      const project = await getDeployedContract("Project", {
+        fundraisingGoal: ethers.utils.parseEther("0.01").toString(),
+      });
       await ownerAddress.sendTransaction({
         to: project.address,
         value: ethers.utils.parseEther("1"),
@@ -480,13 +463,9 @@ describe("Project", () => {
     });
 
     it("throws error if project is finished successfully", async () => {
-      const project = await getDeployedContract(
-        "Project",
-        "Name",
-        "Description",
-        "TEST",
-        ethers.utils.parseEther("1").toString()
-      );
+      const project = await getDeployedContract("Project", {
+        fundraisingGoal: ethers.utils.parseEther("1").toString(),
+      });
       await secondAddress.sendTransaction({
         to: project.address,
         value: ethers.utils.parseEther("1"),
@@ -547,13 +526,9 @@ describe("Project", () => {
 
   describe("withdrawCompletedProjectFunds", () => {
     it("allows owner to withdraw funds and emits Withdraw event", async () => {
-      const project = await getDeployedContract(
-        "Project",
-        "Name",
-        "Description",
-        "TEST",
-        ethers.utils.parseEther("1").toString()
-      );
+      const project = await getDeployedContract("Project", {
+        fundraisingGoal: ethers.utils.parseEther("1").toString(),
+      });
       await secondAddress.sendTransaction({
         to: project.address,
         value: ethers.utils.parseEther("2"),
@@ -585,13 +560,9 @@ describe("Project", () => {
     });
 
     it("throws error if address is not owner", async () => {
-      const project = await getDeployedContract(
-        "Project",
-        "Name",
-        "Description",
-        "TEST",
-        ethers.utils.parseEther("1").toString()
-      );
+      const project = await getDeployedContract("Project", {
+        fundraisingGoal: ethers.utils.parseEther("1").toString(),
+      });
       await secondAddress.sendTransaction({
         to: project.address,
         value: ethers.utils.parseEther("2"),
