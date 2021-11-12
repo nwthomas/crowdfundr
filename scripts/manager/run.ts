@@ -14,8 +14,8 @@ async function main() {
   );
   projectTxn.wait();
 
-  const projectAddressTxn = await manager.projects(0);
-  console.log("Project created at", projectAddressTxn);
+  const projectAddress = await manager.projects(0);
+  console.log("Project created at", projectAddress);
 }
 
 main().catch((error) => {

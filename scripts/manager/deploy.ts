@@ -4,7 +4,6 @@ async function main() {
   const ManagerContractFactory = await ethers.getContractFactory("Manager");
   const manager = await ManagerContractFactory.deploy();
   await manager.deployed();
-
   console.log("Manager deployed to:", manager.address);
 }
 
