@@ -47,6 +47,7 @@ contract Project is Ownable, ERC721 {
     );
     _;
   }
+
   modifier isNotCancelledProject() {
     require(!isCancelled, "Project: project is cancelled");
     _;
