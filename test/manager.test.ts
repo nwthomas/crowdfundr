@@ -225,7 +225,9 @@ describe("Manager", () => {
       const projectAddressTxn = await manager.projects(0);
       project = await project.attach(projectAddressTxn);
 
+      const managerOwnerTxn = await manager.owner();
       const projectOwnerTxn = await project.owner();
+      expect(managerOwnerTxn).to.equal(account1.address);
       expect(projectOwnerTxn).to.equal(account2.address);
     });
   });
