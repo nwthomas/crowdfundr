@@ -41,8 +41,7 @@ contract Project is Ownable, ERC721 {
 
   modifier hasMintableNFTs() {
     require(
-      balanceOf(msg.sender) <
-        addressToContributions[msg.sender] / 1000000000000000000,
+      balanceOf(msg.sender) < addressToContributions[msg.sender] / 1 ether,
       "Project: no available NFTs to mint"
     );
     _;
@@ -132,7 +131,6 @@ contract Project is Ownable, ERC721 {
       isCancelled || (block.timestamp >= projectEndTimeSeconds && !isFinished),
       "Project: cannot refund project funds"
     );
-
     require(
       addressToContributions[msg.sender] > 0,
       "Project: address has no contributions"
@@ -147,13 +145,17 @@ contract Project is Ownable, ERC721 {
 
   /// @notice Allows the owner of the contract to withdraw a successfully completed
   /// fundraising project's ether
-  function withdrawCompletedProjectFunds() external onlyOwner {
+  /// @param _amount The amount of ether to withdraw in the transaction
+  function withdrawCompletedProjectFunds(uint256 _amount) external onlyOwner {
     require(isFinished, "Project: project not finished successfully");
+    require(
+      _amount <= address(this).balance,
+      "Project: not enough ether in contract"
+    );
 
-    uint256 contractBalance = address(this).balance;
-    (bool success, ) = msg.sender.call{ value: contractBalance }("");
+    (bool success, ) = msg.sender.call{ value: _amount }("");
     require(success, "Project: withdraw failed");
-    emit Withdraw(msg.sender, address(this), contractBalance);
+    emit Withdraw(msg.sender, address(this), _amount);
   }
 
   /// @notice Allows the lazy minting of NFT badges for all contributors for the

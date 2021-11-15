@@ -532,7 +532,7 @@ describe("Project", () => {
   });
 
   describe("withdrawCompletedProjectFunds", () => {
-    it("allows owner to withdraw funds and emits Withdraw event", async () => {
+    it("allows owner to withdraw all funds and emits Withdraw event", async () => {
       const project = await getDeployedProjectContract({
         fundraisingGoal: ethers.utils.parseEther("1").toString(),
       });
@@ -541,14 +541,43 @@ describe("Project", () => {
         value: ethers.utils.parseEther("2"),
       });
 
-      const withdrawTxn = await project.withdrawCompletedProjectFunds();
+      const withdrawalAmount = ethers.utils.parseEther("2");
+      const withdrawTxn = await project.withdrawCompletedProjectFunds(
+        withdrawalAmount
+      );
       expect(withdrawTxn)
         .to.emit(project, "Withdraw")
-        .withArgs(
-          account1.address,
-          project.address,
-          ethers.utils.parseEther("2")
-        );
+        .withArgs(account1.address, project.address, withdrawalAmount);
+    });
+
+    it("allows owner to withdraw partial funds multiple times and emits Withdraw events", async () => {
+      const project = await getDeployedProjectContract({
+        fundraisingGoal: ethers.utils.parseEther("5").toString(),
+      });
+      await account2.sendTransaction({
+        to: project.address,
+        value: ethers.utils.parseEther("2"),
+      });
+      await account2.sendTransaction({
+        to: project.address,
+        value: ethers.utils.parseEther("3"),
+      });
+
+      const withdrawalAmount1 = ethers.utils.parseEther("2");
+      const withdrawTxn1 = await project.withdrawCompletedProjectFunds(
+        withdrawalAmount1
+      );
+      expect(withdrawTxn1)
+        .to.emit(project, "Withdraw")
+        .withArgs(account1.address, project.address, withdrawalAmount1);
+
+      const withdrawalAmount2 = ethers.utils.parseEther("3");
+      const withdrawTxn2 = await project.withdrawCompletedProjectFunds(
+        withdrawalAmount2
+      );
+      expect(withdrawTxn2)
+        .to.emit(project, "Withdraw")
+        .withArgs(account1.address, project.address, withdrawalAmount2);
     });
 
     it("throws error if project is not finished successfully", async () => {
@@ -556,7 +585,9 @@ describe("Project", () => {
 
       let error;
       try {
-        await project.withdrawCompletedProjectFunds();
+        await project.withdrawCompletedProjectFunds(
+          ethers.utils.parseEther("0.01")
+        );
       } catch (newError) {
         error = newError;
       }
@@ -577,7 +608,9 @@ describe("Project", () => {
 
       let error;
       try {
-        await project.connect(account2).withdrawCompletedProjectFunds();
+        await project
+          .connect(account2)
+          .withdrawCompletedProjectFunds(ethers.utils.parseEther("0.01"));
       } catch (newError) {
         error = newError;
       }
