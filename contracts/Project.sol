@@ -26,18 +26,10 @@ contract Project is Ownable, ERC721 {
   event Contribution(
     address indexed from,
     address indexed project,
-    uint256 indexed amount
+    uint256 amount
   );
-  event Refund(
-    address indexed to,
-    address indexed project,
-    uint256 indexed amount
-  );
-  event Withdraw(
-    address indexed to,
-    address indexed project,
-    uint256 indexed amount
-  );
+  event Refund(address indexed to, address indexed project, uint256 amount);
+  event Withdraw(address indexed to, address indexed project, uint256 amount);
 
   modifier hasMintableNFTs() {
     require(
