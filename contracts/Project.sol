@@ -3,22 +3,20 @@ pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/utils/Counters.sol";
 
 /// @title A contract for holding a fundraising project
 /// @author Nathan Thomas
 /// @notice This contract is not audited - use at your own risk
 contract Project is Ownable, ERC721 {
-  using Counters for Counters.Counter;
-  Counters.Counter private tokenIds;
-
   string public description;
   uint256 public projectEndTimeSeconds;
   uint256 public fundraisingGoal;
+  uint256 public tokenIds;
   bool public isCancelled = false;
   bool public isFinished = false;
 
   mapping(address => uint256) public addressToContributions;
+  mapping(address => uint256) public addressToMintedNFTs;
 
   uint256 public constant MINIMUM_CONTRIBUTION = 0.01 ether;
   uint256 public constant PROJECT_TIME_LENGTH_SECONDS = 30 days;
@@ -33,7 +31,8 @@ contract Project is Ownable, ERC721 {
 
   modifier hasMintableNFTs() {
     require(
-      balanceOf(msg.sender) < addressToContributions[msg.sender] / 1 ether,
+      addressToMintedNFTs[msg.sender] <
+        addressToContributions[msg.sender] / 1 ether,
       "Project: no available NFTs to mint"
     );
     _;
@@ -155,9 +154,10 @@ contract Project is Ownable, ERC721 {
   /// @dev Once a token has been minted here, the NFT will respect all ERC721 API
   /// spec requirements
   function mintNFT() external hasMintableNFTs {
-    uint256 newTokenId = tokenIds.current();
-    _safeMint(msg.sender, newTokenId);
+    addressToMintedNFTs[msg.sender] += 1;
 
-    tokenIds.increment();
+    _safeMint(msg.sender, tokenIds);
+
+    tokenIds += 1;
   }
 }
